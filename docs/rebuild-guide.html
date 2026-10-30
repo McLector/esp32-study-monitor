@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rebuild Guide — DeskPulse 2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+  :root {
+    --bg: #0e1117;
+    --bg-card: #161b22;
+    --bg-card-alt: #1c2230;
+    --bg-code: #0d1117;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --accent: #f9826c;
+    --accent-glow: rgba(249, 130, 108, 0.15);
+    --green: #3fb950;
+    --green-dim: rgba(63, 185, 80, 0.15);
+    --yellow: #d29922;
+    --yellow-dim: rgba(210, 153, 34, 0.15);
+    --red: #f85149;
+    --red-dim: rgba(248, 81, 73, 0.15);
+    --blue: #58a6ff;
+    --blue-dim: rgba(88, 166, 255, 0.12);
+    --oled: #7fd7ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 17px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* --- HERO --- */
+  .hero { position: relative; padding: 80px 0 56px; border-bottom: 1px solid var(--border); overflow: hidden; }
+  .hero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 600px 400px at 20% 50%, var(--accent-glow), transparent),
+      radial-gradient(ellipse 500px 300px at 80% 30%, var(--blue-dim), transparent);
+  }
+  .hero-inner { max-width: 1180px; margin: 0 auto; padding: 0 32px; position: relative; }
+  .hero-tag {
+    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--accent);
+    border: 1px solid var(--accent); padding: 4px 12px; border-radius: 4px; margin-bottom: 20px;
+  }
+  .hero h1 { font-family: 'DM Serif Display', serif; font-size: clamp(38px, 5.5vw, 62px); font-weight: 400; line-height: 1.1; margin-bottom: 16px; }
+  .hero h1 span { color: var(--accent); }
+  .hero-sub { font-size: 18px; color: var(--text-muted); max-width: 680px; font-weight: 300; }
+  .hero-meta { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 24px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text-dim); }
+  .hero-meta span::before { content: '›'; margin-right: 6px; color: var(--accent); }
+  .stats { margin-top: 36px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 760px; }
+  .stat { background: rgba(22, 27, 34, .8); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .stat b { display: block; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px; line-height: 1.1; color: var(--text); }
+  .stat span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+
+  /* --- LAYOUT --- */
+  .layout { max-width: 1180px; margin: 0 auto; padding: 0 32px 100px; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 56px; }
+  .toc { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; padding-top: 64px; }
+  .toc-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; }
+  .toc a { display: block; padding: 6px 0 6px 14px; border-left: 2px solid var(--border); color: var(--text-muted); font-size: 14px; line-height: 1.35; transition: color .15s, border-color .15s; }
+  .toc a:hover { color: var(--text); text-decoration: none; }
+  .toc a.active { color: var(--text); border-left-color: var(--accent); }
+  .toc-label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+  .toc a.active .toc-label { color: var(--accent); }
+  .progress { margin-top: 20px; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text-muted); }
+  .progress-bar { height: 5px; background: var(--border); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .progress-bar span { display: block; height: 100%; width: 0; background: var(--green); transition: width .3s; }
+  .content { min-width: 0; }
+
+  /* --- SECTIONS --- */
+  .section { margin-top: 64px; }
+  .section-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .section h2 { font-family: 'DM Serif Display', serif; font-size: 34px; font-weight: 400; margin-bottom: 20px; line-height: 1.2; }
+  .section h3 { font-size: 20px; font-weight: 600; margin-top: 40px; margin-bottom: 12px; color: var(--text); }
+  .section p { color: var(--text-muted); margin-bottom: 16px; }
+  .section p strong, .section li strong { color: var(--text); font-weight: 600; }
+  .section ul, .section ol { color: var(--text-muted); margin: 0 0 16px 22px; }
+  .section li { margin-bottom: 6px; }
+  em { color: var(--text); }
+
+  /* --- TABLES --- */
+  .table-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table th { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); text-align: left; padding: 11px 16px; border-bottom: 2px solid var(--border); background: var(--bg-card); white-space: nowrap; }
+  table td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
+  table tr:last-child td { border-bottom: none; }
+  table tr:hover td { background: var(--bg-card); }
+  table td:first-child { font-weight: 500; color: var(--text); }
+  td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+
+  /* --- CODE --- */
+  pre { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0 20px; font-size: 13px; line-height: 1.6; }
+  code { font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: var(--bg-card); padding: 2px 7px; border-radius: 4px; color: var(--accent); }
+  pre code, pre code.hljs { background: none; padding: 0; color: #c9d1d9; font-size: 13px; }
+
+  /* --- CALLOUTS --- */
+  .callout { border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 15px; border-left: 3px solid; }
+  .callout p { margin: 0; font-size: 15px; }
+  .callout ul { margin: 10px 0 0 20px; font-size: 15px; }
+  .callout-warn { background: var(--yellow-dim); border-color: var(--yellow); }
+  .callout-info { background: var(--blue-dim); border-color: var(--blue); }
+  .callout-danger { background: var(--red-dim); border-color: var(--red); }
+  .callout-success { background: var(--green-dim); border-color: var(--green); }
+  .callout strong { color: var(--text); }
+
+  /* --- DECISIONS --- */
+  .lesson-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 12px 0; transition: border-color .2s; }
+  .lesson-card:hover { border-color: var(--accent); }
+  .lesson-card p { margin: 0; font-size: 15px; }
+  .lesson-card strong { display: block; font-size: 16px; margin-bottom: 4px; }
+  .lesson-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; }
+
+  /* --- TIMELINE --- */
+  .timeline { position: relative; margin: 32px 0 32px 20px; padding-left: 32px; border-left: 2px solid var(--border); }
+  .timeline-entry { position: relative; margin-bottom: 30px; }
+  .timeline-entry:last-child { margin-bottom: 0; }
+  .timeline-dot { position: absolute; left: -41px; top: 6px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg); }
+  .dot-green { background: var(--green); } .dot-orange { background: var(--yellow); }
+  .dot-red { background: var(--red); } .dot-blue { background: var(--blue); }
+  .timeline-title { font-weight: 600; font-size: 16px; color: var(--text); margin-bottom: 4px; }
+  .phase-num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); margin-right: 10px; }
+  .timeline-body { color: var(--text-muted); font-size: 15px; line-height: 1.6; margin-bottom: 8px; }
+  .gate { display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+  .gate-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--green); background: var(--green-dim); padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+
+  /* --- DIAGRAM --- */
+  .diagram { margin: 24px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+  .diagram svg { width: 100%; height: auto; display: block; }
+
+  /* --- OLED MOCK --- */
+  .oled-wrap { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: center; margin: 20px 0; }
+  .oled { background: #05070a; border: 10px solid #1c2230; border-radius: 10px; box-shadow: 0 0 0 1px var(--border), 0 10px 30px rgba(0,0,0,.4); padding: 12px 14px; aspect-ratio: 2 / 1; display: flex; flex-direction: column; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; color: var(--oled); text-shadow: 0 0 6px rgba(127, 215, 255, .55); font-size: 12px; line-height: 1.2; }
+  .oled-l.big { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+  .oled-l.split { display: flex; justify-content: space-between; }
+  .oled-bar { height: 9px; border: 1.5px solid var(--oled); padding: 1px; box-shadow: 0 0 6px rgba(127,215,255,.4); }
+  .oled-bar span { display: block; height: 100%; background: var(--oled); }
+  .oled-key { margin: 0; }
+  .oled-wrap .oled-key { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+  /* --- FORMULA --- */
+  .formula { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 20px 24px; margin: 20px 0; text-align: center; }
+  .f-main { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+  .f-sub { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text-muted); margin-top: 6px; }
+  var { font-style: italic; color: var(--accent); }
+  sub { font-size: 65%; }
+
+  /* --- CHECKLISTS --- */
+  ul.checklist { list-style: none; margin-left: 0; }
+  li.check label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; padding: 8px 12px; border-radius: 6px; border: 1px solid transparent; }
+  li.check label:hover { background: var(--bg-card); border-color: var(--border); }
+  li.check input { appearance: none; -webkit-appearance: none; flex-shrink: 0; width: 18px; height: 18px; margin-top: 4px; border: 2px solid var(--text-dim); border-radius: 4px; display: grid; place-content: center; cursor: pointer; }
+  li.check input:checked { background: var(--green); border-color: var(--green); }
+  li.check input:checked::after { content: ''; width: 5px; height: 9px; border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+  li.check input:checked + span { color: var(--text-dim); text-decoration: line-through; }
+
+  /* --- FOOTER --- */
+  .footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); text-align: center; font-size: 13px; color: var(--text-dim); }
+  .to-top { position: fixed; right: 20px; bottom: 20px; width: 42px; height: 42px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); display: grid; place-items: center; font-size: 18px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .to-top.show { opacity: 1; pointer-events: auto; }
+  .to-top:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+
+  /* --- RESPONSIVE --- */
+  @media (max-width: 980px) {
+    .layout { grid-template-columns: 1fr; gap: 0; }
+    .toc { display: none; }
+  }
+  @media (max-width: 700px) {
+    body { font-size: 16px; }
+    .hero { padding: 48px 0 40px; }
+    .hero-inner, .layout { padding-left: 16px; padding-right: 16px; }
+    .hero-meta { gap: 12px; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .section h2 { font-size: 28px; }
+    .oled-wrap { grid-template-columns: 1fr; }
+    .oled { max-width: 320px; }
+    .timeline { margin-left: 8px; padding-left: 24px; }
+    .timeline-dot { left: -33px; }
+    .gate { flex-direction: column; gap: 4px; }
+  }
+  @media print {
+    body { background: #fff; color: #111; }
+    .toc, .to-top, .hero::before { display: none; }
+    .layout { grid-template-columns: 1fr; }
+    .section { break-inside: auto; }
+    pre { white-space: pre-wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <div class="hero-inner">
+    <div class="hero-tag">Rebuild Guide</div>
+    <h1>DeskPulse <span>2.0</span></h1>
+    <p class="hero-sub">
+      A phase-by-phase walkthrough for rebuilding the ESP32 study monitor from scratch with a
+      local OLED display, configurable Pomodoro, a daily focus score, 20-20-20 eye-rest reminders
+      and session summary notifications.
+    </p>
+    <div class="hero-meta">
+      <span>ESP32 WROOM-32 dev board</span>
+      <span>SSD1306 OLED · I2C</span>
+      <span>Blynk IoT · Free plan</span>
+      <span>Arduino C++</span>
+      <span>CS Elect 3 Finals · October 2026</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>4</b><span>Enhancements</span></div>
+      <div class="stat"><b>12</b><span>Gated phases</span></div>
+      <div class="stat"><b>17</b><span>Integration tests</span></div>
+      <div class="stat"><b>~500</b><span>Msgs / hour max</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contents">
+    <div class="toc-title">Contents</div>
+    <a href="#overview"><span class="toc-label">Start here</span>Overview</a>
+<a href="#design-decisions-and-pushback"><span class="toc-label">Decisions</span>Design decisions and pushback</a>
+<a href="#bill-of-materials"><span class="toc-label">Hardware</span>Bill of materials</a>
+<a href="#pin-map-and-wiring"><span class="toc-label">Hardware</span>Pin map and wiring</a>
+<a href="#build-order"><span class="toc-label">Plan</span>Build order</a>
+<a href="#firmware-architecture"><span class="toc-label">Firmware</span>Firmware architecture</a>
+<a href="#enhancement-1-oled-status-display"><span class="toc-label">Enhancement 01</span>OLED status display</a>
+<a href="#enhancement-2-configurable-pomodoro-and-focus-score"><span class="toc-label">Enhancement 02</span>configurable Pomodoro and focus score</a>
+<a href="#enhancement-3-20-20-20-eye-rest-reminder"><span class="toc-label">Enhancement 03</span>20-20-20 eye-rest reminder</a>
+<a href="#enhancement-4-session-summary-notification"><span class="toc-label">Enhancement 04</span>session summary notification</a>
+<a href="#optional-mpu6050-typing-activity-detection"><span class="toc-label">Stretch goal</span>MPU6050 typing-activity detection</a>
+<a href="#blynk-setup"><span class="toc-label">Cloud</span>Blynk setup</a>
+<a href="#integration-test-plan"><span class="toc-label">Testing</span>Integration test plan</a>
+<a href="#project-logistics"><span class="toc-label">Logistics</span>Project logistics</a>
+<a href="#known-limitations-and-defense-notes"><span class="toc-label">Defense</span>Known limitations and defense notes</a>
+<a href="#sources"><span class="toc-label">References</span>Sources</a>
+    <div class="progress">
+      <span id="prog-text">0 of 0 gate checks done</span>
+      <div class="progress-bar"><span id="prog-bar"></span></div>
+    </div>
+  </nav>
+
+  <main class="content">
+    <section class="section" id="overview"><div class="section-label">Start here</div><h2>Overview</h2>
+<p>DeskPulse 2.0 is a clean rebuild: the same sensors, a new pin map built around an I2C bus, and modular firmware that the four enhancements slot into without rewrites.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>1.0</th>
+<th>2.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local feedback</td>
+<td>5 LEDs</td>
+<td>5 LEDs + 128x64 OLED status screen</td>
+</tr>
+<tr>
+<td>Sit limit</td>
+<td>Fixed 30 min</td>
+<td>Blynk sliders for sit limit and break length, saved on the device (25/5 default)</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>Raw counters</td>
+<td>Daily focus score 0-100, plus one history point per day</td>
+</tr>
+<tr>
+<td>Reminders</td>
+<td>Break alert</td>
+<td>Break alert, 20-20-20 eye-rest, session summary push</td>
+</tr>
+<tr>
+<td>Offline use</td>
+<td>Details only on Blynk</td>
+<td>Fully usable offline; the cloud is optional</td>
+</tr>
+<tr>
+<td>Reboot</td>
+<td>All counters lost</td>
+<td>Today's counters restored from flash</td>
+</tr>
+<tr>
+<td>Cloud traffic</td>
+<td>Every value every 2 s</td>
+<td>Change-only writes on a slow cadence that fits the free plan</td>
+</tr>
+</tbody>
+</table></div>
+<div class="callout callout-info"><p><strong>How to use this guide:</strong> work the phases in order and do not start one until the previous gate test passes. Keep <code>TEST_MODE</code> on until the final integration run.</p></div>
+<div class="callout callout-info"><p><strong>Assumptions:</strong> Arduino IDE 2.x, Espressif's ESP32 board package, the Blynk library, and your existing Blynk template extended rather than recreated.</p></div>
+<div class="callout callout-warn"><p><strong>Honesty note:</strong> the code here is written against the Arduino-ESP32, Adafruit and Blynk library APIs as I understand them. I have not compiled or run it. Treat each snippet as a reference implementation and compile it at the end of its phase.</p></div>
+</section><section class="section" id="design-decisions-and-pushback"><div class="section-label">Decisions</div><h2>Design decisions and pushback</h2>
+<p>Seven decisions shape the rebuild. Two of them (the display choice and the Blynk message budget) are corrections to the proposal as written.</p>
+<div class="lesson-card"><div class="lesson-num">Decision 01</div><p><strong>Use the 0.96" SSD1306 OLED, not the 16x2 LCD.</strong> The proposal leaves this open; I'd close it. The OLED runs natively at 3.3 V and shows 8 lines plus a drawn progress bar. Common 16x2 LCD backpacks (PCF8574) want 5 V and pull SDA/SCL up to 5 V, which is above the ESP32's input rating. You would need a level shifter just to stay in spec.</p></div>
+<div class="lesson-card"><div class="lesson-num">Decision 02</div><p><strong>Cloud traffic must be budgeted.</strong> The Blynk Free plan allows 100,000 device messages per month, and every <code>Blynk.virtualWrite()</code> counts as one. Version 1.0 pushed about 7 values every 2 s, roughly 12,600 messages per hour. On a current Free account that empties the month's quota in about 8 hours of use. Version 2.0 sends values only when they change, on slow timers, for a worst case near 500 per hour (budget in the Blynk section). Check the message counter in Blynk.Console: if your older account shows no limit, the budget still costs you nothing.</p></div>
+<div class="lesson-card"><div class="lesson-num">Decision 03</div><p><strong>Only three custom Blynk events.</strong> Free templates get 5 events, and community reports say the built-in Online and Offline events count toward that. Plan on exactly three: <code>break_time</code>, <code>eye_rest</code>, <code>session_summary</code>. Each device is also capped at 100 logged events per day.</p></div>
+<div class="lesson-card"><div class="lesson-num">Decision 04</div><p><strong>Weekly history is at the edge of the Free plan.</strong> Free keeps 1 week of compressed history. So the firmware writes one "daily focus" value per day to its own datastream; a 7-day chart of that is the weekly view. Anything older than a week is gone unless you upgrade.</p></div>
+<div class="lesson-card"><div class="lesson-num">Decision 05</div><p><strong>The device must work with Wi-Fi off.</strong> With an OLED on board, the cloud becomes optional. The firmware connects without blocking, keeps counting while offline, and catches up when the link returns. Settings and today's counters live in flash (NVS), which also fixes 1.0's lost-on-reboot limitation.</p></div>
+<div class="lesson-card"><div class="lesson-num">Decision 06</div><p><strong>Two things cannot be measured, so they are not scored.</strong> No sensor here can see where your eyes are, so 20-20-20 is a reminder only. The MPU6050 cannot tell "idle" from "reading a book", so it is optional, off by default, and capped at a small share of the score.</p></div>
+<div class="lesson-card"><div class="lesson-num">Decision 07</div><p><strong>Build the MPU6050 last, and only if time is left.</strong> It touches the same I2C bus as the OLED and needs its own tuning session. The other three enhancements do not depend on it.</p></div>
+<p>One small extension to the proposal: the OLED gets two more states besides Studying, Break Time! and Away. "On break" shows a countdown until the break counts, and "Object?" appears when the PIR guard thinks a bag, not a person, is in front of the IR sensor.</p>
+</section><section class="section" id="bill-of-materials"><div class="section-label">Hardware</div><h2>Bill of materials</h2>
+<p>You already own everything except the OLED and, if you go for it, the MPU6050.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Qty</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ESP32 dev board, WROOM-32 class (the build used a 38-pin USB-C board with a CP2102)</td>
+<td>1</td>
+<td>Have</td>
+<td>Any WROOM-32 board with these GPIOs works. On the 38-pin board the 5 V pin is printed <strong>V5</strong>; this guide calls it VIN</td>
+</tr>
+<tr>
+<td>0.96" SSD1306 OLED, 128x64, I2C, 4-pin</td>
+<td>1</td>
+<td>Buy</td>
+<td>Get the I2C version, not SPI (7-pin). Pin order varies between sellers</td>
+</tr>
+<tr>
+<td>LEDs (blue, green, yellow, orange, red: your 1.0 set)</td>
+<td>5</td>
+<td>Have</td>
+<td>Progress bar</td>
+</tr>
+<tr>
+<td>220 Ω resistors</td>
+<td>5</td>
+<td>Have</td>
+<td>One per LED</td>
+</tr>
+<tr>
+<td>Active buzzer module</td>
+<td>1</td>
+<td>Have</td>
+<td>Has its own driver transistor</td>
+</tr>
+<tr>
+<td>IR obstacle module (NE555)</td>
+<td>1</td>
+<td>Have</td>
+<td>Keep the pots where you tuned them. Runs on 3V3 in 2.0 (see <a href="#ir-wiring">IR wiring</a>)</td>
+</tr>
+<tr>
+<td>PIR HC-SR501</td>
+<td>1</td>
+<td>Have</td>
+<td>Time-delay pot fully counterclockwise</td>
+</tr>
+<tr>
+<td>LM393 sound module</td>
+<td>1</td>
+<td>Have</td>
+<td>Only AO is used</td>
+</tr>
+<tr>
+<td>DHT11 3-pin module</td>
+<td>1</td>
+<td>Have</td>
+<td>Built-in pull-up</td>
+</tr>
+<tr>
+<td><s>Divider resistors: 1 kΩ + 2 kΩ</s></td>
+<td>-</td>
+<td>Not needed</td>
+<td>Dropped during the build: the divider dragged the IR output down. See <a href="#ir-wiring">IR wiring</a></td>
+</tr>
+<tr>
+<td>GY-521 MPU6050 module</td>
+<td>1</td>
+<td>Optional</td>
+<td>Only for the activity-detection stretch goal</td>
+</tr>
+<tr>
+<td>Full-size breadboard (or two half-size)</td>
+<td>1</td>
+<td>Have</td>
+<td>Room for two separate power rails</td>
+</tr>
+<tr>
+<td>Jumpers, USB data cable</td>
+<td>-</td>
+<td>Have</td>
+<td>A charge-only cable will not upload</td>
+</tr>
+<tr>
+<td>Multimeter</td>
+<td>1</td>
+<td>Optional</td>
+<td>No longer required: the divider check it was for is gone. Still handy for tracing a short</td>
+</tr>
+</tbody>
+</table></div>
+<p>Libraries (Arduino Library Manager): <strong>Blynk</strong> (Volodymyr Shymanskyy), <strong>Adafruit SSD1306</strong> + <strong>Adafruit GFX</strong>, <strong>DHT sensor library</strong> (Adafruit) + <strong>Adafruit Unified Sensor</strong>, and <strong>Adafruit MPU6050</strong> only if you build the optional part. <code>Preferences</code> and <code>WiFi</code> ship with the ESP32 core.</p>
+</section><section class="section" id="pin-map-and-wiring"><div class="section-label">Hardware</div><h2>Pin map and wiring</h2>
+<p>The I2C bus takes GPIO 21 and 22, the ESP32's default SDA/SCL pins, so the DHT11 and IR sensor move off them. Everything else stays on pins you already know are safe.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>GPIO</th>
+<th>Power rail</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I2C SDA (OLED, MPU6050)</td>
+<td>21</td>
+<td>3V3</td>
+<td>Default <code>Wire</code> SDA. Modules have on-board pull-ups</td>
+</tr>
+<tr>
+<td>I2C SCL (OLED, MPU6050)</td>
+<td>22</td>
+<td>3V3</td>
+<td>Default <code>Wire</code> SCL</td>
+</tr>
+<tr>
+<td>LED 1, blue (0-20%)</td>
+<td>25</td>
+<td>-</td>
+<td>Through 220 Ω, cathode to GND</td>
+</tr>
+<tr>
+<td>LED 2, green (20-40%)</td>
+<td>26</td>
+<td>-</td>
+<td>Through 220 Ω</td>
+</tr>
+<tr>
+<td>LED 3, yellow (40-60%)</td>
+<td>27</td>
+<td>-</td>
+<td>Through 220 Ω</td>
+</tr>
+<tr>
+<td>LED 4, orange (60-80%)</td>
+<td>32</td>
+<td>-</td>
+<td>Through 220 Ω</td>
+</tr>
+<tr>
+<td>LED 5, red (80-100%)</td>
+<td>33</td>
+<td>-</td>
+<td>Through 220 Ω</td>
+</tr>
+<tr>
+<td>Buzzer signal</td>
+<td>19</td>
+<td>3V3</td>
+<td>Active type, DC drive</td>
+</tr>
+<tr>
+<td>IR obstacle OUT</td>
+<td>18</td>
+<td>3V3</td>
+<td>Direct, no divider (<a href="#ir-wiring">changed during the build</a>). Use <code>INPUT</code>, not <code>INPUT_PULLUP</code></td>
+</tr>
+<tr>
+<td>PIR OUT</td>
+<td>23</td>
+<td>5V (VIN)</td>
+<td>Output is 3.3 V logic from its regulator</td>
+</tr>
+<tr>
+<td>DHT11 DATA</td>
+<td>16</td>
+<td>3V3</td>
+<td>RX2 on the silkscreen; free to use on WROOM-32</td>
+</tr>
+<tr>
+<td>LM393 AO</td>
+<td>34</td>
+<td>3V3</td>
+<td>ADC1, required with Wi-Fi on. DO is not wired</td>
+</tr>
+<tr>
+<td>Spare</td>
+<td>17, 35, 13</td>
+<td>-</td>
+<td>35 is input-only</td>
+</tr>
+</tbody>
+</table></div>
+<div class="callout callout-info"><p><strong>Still off limits:</strong> GPIO 6-11 (on-board flash) and the strapping pins 0, 2, 5, 12, 15. GPIO 34-39 are input-only. Never use ADC2 pins for analog reads while Wi-Fi is on.</p></div>
+<h3>Power rails</h3>
+<p>Use the two long rails on opposite sides of the breadboard: <strong>5V (VIN)</strong> on one side, <strong>3V3</strong> on the other, with GND tied together. Physical separation stops a stray jumper from putting 5 V on a 3.3 V part.</p>
+<ul>
+<li>5V rail: PIR only.</li>
+<li>3V3 rail: OLED, MPU6050, DHT11, LM393, buzzer, IR obstacle module.</li>
+<li>Powering from USB: the ESP32's VIN pin carries roughly the USB 5 V (a little less on boards with a protection diode). That is plenty for the PIR.</li>
+</ul>
+<h3 id="ir-wiring">IR wiring (changed during the build)</h3>
+<p>This guide originally put the IR module on the 5 V rail, with a 1 kΩ + 2 kΩ divider to bring its output down to 3.3 V for GPIO 18. On the bench that never worked: GPIO 18 read 0 all the time, and the module's obstacle LED glowed faintly with nothing in front of it.</p>
+<p><strong>Why:</strong> this module doesn't drive its output to 5 V. It only holds it HIGH weakly, through a pull-up of roughly 10 kΩ. A 3 kΩ divider to GND is a much stronger load, so the idle output sagged to about 2.5 V and the divider tap to about 1.7 V. The ESP32 needs about 2.5 V to read a 1. Pulling R1 out confirmed it: the faint glow vanished, and the LED lit only for a hand.</p>
+<p><strong>What the build uses instead:</strong> run the IR module from <strong>3V3</strong> and wire OUT <strong>straight to GPIO 18</strong>. On 3.3 V the output can never go above 3.3 V, so no divider is needed:</p>
+<pre><code class="nohighlight">IR VCC ── 3V3 rail
+IR GND ── GND rail
+IR OUT ────────────── GPIO 18   (INPUT, no pull-up)
+</code></pre>
+<p><strong>Trade-off:</strong> the IR emitter is dimmer on 3.3 V, so the range drops to about 10 cm, which still meets the phase 5 gate. Mount it 8–10 cm from your torso. If you need the full 5 V range, keep it on 5 V with a high-value divider (about 47 kΩ over 100 kΩ). That loads the output so little that the idle tap stays near 3.2 V. Don't use small resistors like 220 Ω–2 kΩ for this.</p>
+<div class="callout callout-danger"><p><strong>Before you connect GPIO 18:</strong> check by eye that nothing from the IR module is in the 5 V rail. With the module powered and nothing in front of it, its obstacle LED must be fully off.</p></div>
+<h3>I2C wiring</h3>
+<p>OLED and MPU6050 share the same four wires: VCC to 3V3, GND, SDA to 21, SCL to 22. <strong>Read the OLED's silkscreen first:</strong> some boards are GND-VCC-SCL-SDA, others VCC-GND-SCL-SDA. Swapping VCC and GND can kill the module. Expected addresses: OLED <code>0x3C</code> (sometimes <code>0x3D</code>), MPU6050 <code>0x68</code>. They do not collide.</p>
+</section><section class="section" id="build-order"><div class="section-label">Plan</div><h2>Build order</h2>
+<p>Twelve phases, each ending in a gate you must pass before moving on. The order puts the OLED early on purpose: once it works, it becomes your debug screen for everything after it.</p>
+<div class="callout callout-info"><p><strong>Progress (31 Oct 2026):</strong> phases 01 and 03–06 have passed on the real board, including all five phase 6 regression tests. Phase 02's Wi-Fi works, but its NTP time check hasn't been run yet. Next up is phase 07, the OLED status screen. The repo's <code>docs/BUILD_LOG.md</code> records how each gate went.</p></div>
+<div class="timeline">
+<div class="timeline-entry"><div class="timeline-dot dot-blue"></div><div class="timeline-title"><span class="phase-num">01</span>Toolchain and template</div><div class="timeline-body">Install the libraries. In Blynk.Console, add the new datastreams and three events (Blynk section). Create <code>secrets.h</code> and add it to <code>.gitignore</code>.</div><div class="gate"><span class="gate-tag">Gate</span><span>A blank sketch with <code>#include</code>s for every library compiles.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-blue"></div><div class="timeline-title"><span class="phase-num">02</span>Bare ESP32</div><div class="timeline-body">USB only, nothing on the breadboard. Connect Wi-Fi, sync NTP, print local time.</div><div class="gate"><span class="gate-tag">Gate</span><span>Serial prints the correct Manila time within 10 s of boot.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-blue"></div><div class="timeline-title"><span class="phase-num">03</span>I2C bus and OLED</div><div class="timeline-body">Wire the OLED alone. Run an I2C scanner, then draw “DeskPulse 2.0”.</div><div class="gate"><span class="gate-tag">Gate</span><span>Scanner finds <code>0x3C</code>; text is readable.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-blue"></div><div class="timeline-title"><span class="phase-num">04</span>Outputs</div><div class="timeline-body">Wire the 5 LEDs and the buzzer.</div><div class="gate"><span class="gate-tag">Gate</span><span>LEDs chase 1 to 5; buzzer clicks.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-blue"></div><div class="timeline-title"><span class="phase-num">05</span>Inputs</div><div class="timeline-body">Wire IR (on 3V3, no divider), PIR, LM393 and DHT11. Run the bench sketch below.</div><div class="gate"><span class="gate-tag">Gate</span><span>IR reads 1 idle and 0 with a hand at 10 cm; PIR 0 at rest; AO spikes on a clap; DHT gives a plausible room reading.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-orange"></div><div class="timeline-title"><span class="phase-num">06</span>Core firmware port</div><div class="timeline-body">Rebuild 1.0's behaviour in the new modular layout and pin map: presence, sit timer, LEDs, buzzer alert, distractions, environment.</div><div class="gate"><span class="gate-tag">Gate</span><span>1.0's five integration tests pass again. This is your regression baseline.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-green"></div><div class="timeline-title"><span class="phase-num">07</span>Enhancement 1: OLED status screen</div><div class="gate"><span class="gate-tag">Gate</span><span>Every state shows the right screen; timers tick in real time.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-green"></div><div class="timeline-title"><span class="phase-num">08</span>Enhancement 2a: configurable Pomodoro</div><div class="timeline-body">Sliders, NVS persistence, the full state machine with “On break”.</div><div class="gate"><span class="gate-tag">Gate</span><span>Slider changes take effect at once and survive a reboot.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-green"></div><div class="timeline-title"><span class="phase-num">09</span>Enhancement 2b: focus score</div><div class="timeline-body">Daily counters, score formula, daily history point, reboot restore.</div><div class="gate"><span class="gate-tag">Gate</span><span>A scripted session gives the score you calculated by hand.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-green"></div><div class="timeline-title"><span class="phase-num">10</span>Enhancement 3: 20-20-20 eye-rest</div><div class="gate"><span class="gate-tag">Gate</span><span>Fires on interval; is skipped when a break is due within 3 minutes.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-green"></div><div class="timeline-title"><span class="phase-num">11</span>Enhancement 4: session summary</div><div class="gate"><span class="gate-tag">Gate</span><span>Leaving for the session-end time produces one notification with correct numbers.</span></div></div>
+<div class="timeline-entry"><div class="timeline-dot dot-red"></div><div class="timeline-title"><span class="phase-num">12</span>Integration, budget check and mounting</div><div class="timeline-body">Run the full test plan, then one real-time hour with <code>TEST_MODE = false</code> while watching the Blynk message counter. Mount the IR sensor 10-15 cm from where you sit.</div><div class="gate"><span class="gate-tag">Gate</span><span>All tests pass; message use is near or below 500 for that hour.</span></div></div>
+</div>
+
+<p>Optional phase 13, the MPU6050, goes after 12 and only if you have time.</p>
+<h3>Bench sketch for phase 5</h3>
+<pre><code class="language-cpp">#include &lt;DHT.h&gt;
+DHT dht(16, DHT11);
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(18, INPUT);   // IR OUT, direct (module on 3V3): no internal pull-up
+  pinMode(23, INPUT);   // PIR
+  dht.begin();
+}
+
+void loop() {
+  // Peak-to-peak over 25 ms catches claps a single read misses
+  int lo = 4095, hi = 0;
+  uint32_t t0 = millis();
+  while (millis() - t0 &lt; 25) {
+    int v = analogRead(34);
+    lo = min(lo, v);
+    hi = max(hi, v);
+  }
+  Serial.printf(&quot;IR=%d PIR=%d P2P=%d T=%.1f H=%.0f\n&quot;,
+                digitalRead(18), digitalRead(23), hi - lo,
+                dht.readTemperature(), dht.readHumidity());
+  delay(500);
+}
+</code></pre>
+<p>The PIR needs about 60 s after power-up before its readings mean anything.</p>
+</section><section class="section" id="firmware-architecture"><div class="section-label">Firmware</div><h2>Firmware architecture</h2>
+<p>The firmware splits into logic modules that know nothing about Blynk, plus one cloud layer that does. That split is what lets the device run offline and keeps cloud code from leaking into sensor code.</p>
+<h3>File layout</h3>
+<pre><code class="nohighlight">DeskPulse/
+├── DeskPulse.ino     setup(), loop(), timers, onSignal(); includes Blynk
+├── cloud.ino         BLYNK_WRITE handlers, pushes, events (2nd .ino tab)
+├── config.h          pins, flags, timing constants
+├── secrets.h         Wi-Fi + Blynk credentials (gitignored)
+├── state.h           AppState shared by all modules
+├── presence.h/.cpp   IR + PIR debounce, object guard
+├── sound.h/.cpp      baseline calibration, peak-to-peak, cooldown
+├── env.h/.cpp        DHT11
+├── session.h/.cpp    state machine, eye-rest, focus score
+├── display.h/.cpp    OLED screens
+├── buzzer.h/.cpp     non-blocking beep patterns + LED effects
+├── storage.h/.cpp    NVS save/restore
+└── activity.h/.cpp   MPU6050 (optional, behind USE_MPU)
+</code></pre>
+<div class="callout callout-info"><p><strong>Why Blynk lives only in .ino tabs:</strong> the Arduino IDE joins all .ino tabs into one file before compiling. <code>BlynkSimpleEsp32.h</code> defines the global <code>Blynk</code> object, so including it in two .cpp files should fail with "multiple definition" linker errors. If you see that error, this is the cause.</p></div>
+<p><strong>How logic talks to the cloud:</strong> modules raise signals; the .ino decides what each one means (beep, push, log an event).</p>
+<pre><code class="language-cpp">// session.h
+enum class Signal : uint8_t {
+  ModeChanged, BreakDue, EyeRest, Distraction, SessionEnded, DayRolled
+};
+void onSignal(Signal s);   // implemented in DeskPulse.ino
+</code></pre>
+<p><code>session.h</code> must also declare <code>sessionTick()</code>, <code>tickEyeRest()</code>, <code>computeFocus()</code> and <code>resetToday()</code>. <code>sessionTick()</code> calls the other two before their definitions appear, and C++ will not compile that without declarations.</p>
+<h3>config.h</h3>
+<pre><code class="language-cpp">#pragma once
+#include &lt;Arduino.h&gt;
+
+// ---------- Pins ----------
+constexpr uint8_t PIN_SDA = 21, PIN_SCL = 22;
+constexpr uint8_t PIN_LEDS[5] = {25, 26, 27, 32, 33};  // blue → red
+constexpr uint8_t PIN_BUZZER = 19;
+constexpr uint8_t PIN_IR = 18;         // direct: IR module runs on 3V3
+constexpr uint8_t PIN_PIR = 23;
+constexpr uint8_t PIN_DHT = 16;
+constexpr uint8_t PIN_SOUND_AO = 34;   // ADC1
+
+// ---------- Feature flags ----------
+constexpr bool TEST_MODE     = true;
+constexpr bool IR_ACTIVE_LOW = true;
+constexpr bool USE_PIR_GUARD = true;
+constexpr bool USE_MPU       = false;
+
+// One app &quot;minute&quot;. In TEST_MODE it lasts 1 s: a 25-min Pomodoro takes 25 s.
+constexpr uint32_t MIN_S = TEST_MODE ? 1 : 60;
+
+// ---------- Defaults (Blynk sliders override, saved in NVS) ----------
+constexpr uint8_t  DEF_SIT_LIMIT_MIN = 25;
+constexpr uint8_t  DEF_BREAK_MIN     = 5;
+constexpr uint16_t DEF_NOISE_MARGIN  = 300;  // fallback; Blynk V6 (tuned to 110 in 1.0) overrides on connect
+
+// ---------- Fixed rules (in app minutes unless noted) ----------
+constexpr uint8_t BREAK_GRACE_MIN     = 5;   // still sitting this long after alert = skipped
+constexpr uint8_t EYE_INTERVAL_MIN    = 20;
+constexpr uint8_t EYE_SKIP_WINDOW_MIN = 3;   // break due sooner than this: skip eye-rest
+constexpr uint8_t SESSION_END_MIN     = 10;  // away this long ends the session
+constexpr uint8_t MIN_SUMMARY_MIN     = 5;   // shorter sessions send no summary
+constexpr uint16_t OBJECT_GUARD_S     = TEST_MODE ? 60 : 300;  // REAL seconds, never scaled
+constexpr uint8_t EYE_REST_SECONDS    = TEST_MODE ? 5 : 20;  // real seconds
+constexpr uint8_t DISTRACTION_COOLDOWN_S = 3;                // real seconds
+</code></pre>
+<h3>state.h</h3>
+<pre><code class="language-cpp">#pragma once
+#include &quot;config.h&quot;
+
+enum class Mode : uint8_t { Away, Studying, BreakDue, OnBreak };
+
+struct Settings {                 // saved in NVS
+  uint8_t  sitLimitMin = DEF_SIT_LIMIT_MIN;
+  uint8_t  breakMin    = DEF_BREAK_MIN;
+  bool     eyeRestOn   = true;
+  bool     muted       = false;
+  uint16_t noiseMargin = DEF_NOISE_MARGIN;
+};
+
+struct Daily {                    // saved in NVS, reset at local midnight
+  uint8_t  version = TEST_MODE ? 101 : 1;  // test-mode data never loads in a real build
+  uint32_t ymd = 0;               // e.g. 20261022
+  uint32_t studySec = 0, idleSec = 0;
+  uint16_t distractions = 0;
+  uint16_t breaksTaken = 0, breaksOnTime = 0, breaksSkipped = 0;
+};
+
+struct Session {
+  bool     active = false;
+  uint32_t studySec = 0;
+  uint16_t breaks = 0, distractions = 0;
+};
+
+struct Live {
+  Mode     mode = Mode::Away;
+  bool     present = false, objectSuspected = false;
+  uint32_t sitSec = 0, awaySec = 0, dueSec = 0, eyeSec = 0;
+  uint8_t  eyeRestLeft = 0;       // &gt; 0 while the eye-rest overlay is up
+  bool     skipCounted = false;   // one skip per break cycle
+  float    tempC = NAN, humidity = NAN;
+  uint16_t noisePeak = 0;
+  int8_t   focus = -1;            // -1 = not enough data yet
+};
+
+struct AppState { Settings cfg; Daily day; Session ses; Live live; };
+extern AppState app;              // defined once in DeskPulse.ino
+</code></pre>
+<h3>Timed tasks</h3>
+<p><code>loop()</code> runs only <code>Blynk.run()</code>, <code>timer.run()</code>, the buzzer sequencer and the mic sampler. No <code>delay()</code> anywhere in the main path.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Every</th>
+<th>Task</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20 ms</td>
+<td>taskActivity</td>
+<td>MPU6050 sampling (optional)</td>
+</tr>
+<tr>
+<td>50 ms</td>
+<td>taskSound</td>
+<td>Reads the running peak-to-peak, distraction check</td>
+</tr>
+<tr>
+<td>200 ms</td>
+<td>taskPresence</td>
+<td>IR + PIR debounce (5 reads = 1 s), object guard</td>
+</tr>
+<tr>
+<td>250 ms</td>
+<td>taskTick</td>
+<td>Runs the 1 Hz state machine, with catch-up</td>
+</tr>
+<tr>
+<td>500 ms</td>
+<td>taskDisplay</td>
+<td>Redraws the OLED</td>
+</tr>
+<tr>
+<td>2.5 s</td>
+<td>taskEnvironment</td>
+<td>DHT11 read</td>
+</tr>
+<tr>
+<td>10 s</td>
+<td>taskConnectivity</td>
+<td>Wi-Fi and Blynk health</td>
+</tr>
+<tr>
+<td>30 s</td>
+<td>taskCloud</td>
+<td>Throttled pushes (Blynk section)</td>
+</tr>
+<tr>
+<td>30 s</td>
+<td>taskRollover</td>
+<td>Midnight reset via NTP</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>taskPersist</td>
+<td>Saves today's counters to NVS if they changed</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Catch-up tick.</strong> A Blynk reconnect attempt can stall <code>loop()</code> for a few seconds. A timer that just fires "once per second" would then lose seconds. Count elapsed time instead:</p>
+<pre><code class="language-cpp">void taskTick() {
+  static uint32_t last = millis();
+  while (millis() - last &gt;= 1000) {   // runs extra ticks after a stall
+    last += 1000;
+    sessionTick();
+  }
+}
+</code></pre>
+<h3>Sound sampling: two fixes over 1.0</h3>
+<div class="callout callout-warn"><p><strong>Mute the mic while the buzzer sounds.</strong> The buzzer sits centimetres from the LM393. During Break due it double-beeps every 5 s, and each beep would log as a distraction; eye-rest chirps would too. Ignore sound while the buzzer is on and for 300 ms after. The build log doesn't say whether 1.0 handled this, so check your old code.</p></div>
+<p><strong>Stop busy-waiting.</strong> 1.0's <code>taskSound</code> blocked the loop for 25 ms out of every 50 ms. Add an OLED redraw (about 25 ms) and the MPU's 20 ms task, and timing gets jittery. Instead, sample once per <code>loop()</code> pass and keep a running min/max:</p>
+<pre><code class="language-cpp">// sound.cpp
+static uint16_t lo = 4095, hi = 0;
+
+void soundSample() {                       // every loop() pass
+  const uint16_t v = analogRead(PIN_SOUND_AO);
+  if (v &lt; lo) lo = v;
+  if (v &gt; hi) hi = v;
+}
+
+void taskSound() {                         // every 50 ms
+  const uint16_t p2p = hi &gt; lo ? hi - lo : 0;
+  lo = 4095; hi = 0;
+  if (buzzerActiveWithin(300)) return;     // our own beep is not a distraction
+  if (p2p &gt; app.live.noisePeak) app.live.noisePeak = p2p;   // V4 push resets it
+  checkDistraction(p2p);                   // baseline + margin, 3 s cooldown, present only
+}
+</code></pre>
+<p>Trade-off: a sound shorter than a blocking call (an OLED redraw, a Blynk reconnect) can still slip through. It is a smaller gap than 1.0 had.</p>
+<h3>setup() and loop()</h3>
+<pre><code class="language-cpp">AppState app;
+BlynkTimer timer;
+
+void setup() {
+  Serial.begin(115200);
+  loadSettings(app.cfg);
+  loadDaily(app.day);                  // checked against the date once NTP syncs
+  initHardware();                      // pins, Wire.begin(PIN_SDA, PIN_SCL), OLED, DHT
+  calibrateSound();                    // 2 s ambient baseline, as in 1.0
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  configTime(8 * 3600, 0, &quot;pool.ntp.org&quot;, &quot;time.google.com&quot;);  // Manila, no DST
+  Blynk.config(BLYNK_AUTH_TOKEN);      // non-blocking; do not use Blynk.begin()
+  registerTimers();
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) Blynk.run();
+  timer.run();
+  buzzerUpdate();
+  soundSample();                       // non-blocking mic sampling (see above)
+}
+</code></pre>
+<p><code>Blynk.begin()</code> blocks until it connects, which would freeze the whole device without Wi-Fi. That is the reason for <code>Blynk.config()</code>.</p>
+<h3>State machine</h3>
+<p>Four modes drive everything the user sees. The key rule: a break only counts once you have stayed away for the full break length.</p>
+<figure class="diagram">
+<svg viewBox="0 0 760 392" role="img" aria-label="DeskPulse 2.0 state machine: Away, Studying, Break due, On break">
+<defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6e7681"/></marker></defs>
+<g fill="none" stroke="#6e7681" stroke-width="1.4">
+<path d="M208 128H288" marker-end="url(#arw)"/>
+<path d="M472 128H548" marker-end="url(#arw)"/>
+<path d="M330 156V298H418" marker-end="url(#arw)"/>
+<path d="M660 156V298H602" marker-end="url(#arw)"/>
+<path d="M445 270V156" marker-end="url(#arw)"/>
+<path d="M510 326V364H116V156" marker-end="url(#arw)"/>
+</g>
+<g font-family="Source Sans 3, sans-serif">
+<rect x="24" y="100" width="184" height="56" rx="8" fill="#161b22" stroke="#30363d"/>
+<text x="116" y="124" text-anchor="middle" fill="#e6edf3" font-weight="600" font-size="15">Away</text>
+<text x="116" y="143" text-anchor="middle" fill="#8b949e" font-size="12">10 min away: session ends</text>
+<rect x="288" y="100" width="184" height="56" rx="8" fill="rgba(63,185,80,.12)" stroke="#3fb950"/>
+<text x="380" y="124" text-anchor="middle" fill="#e6edf3" font-weight="600" font-size="15">Studying</text>
+<text x="380" y="143" text-anchor="middle" fill="#8b949e" font-size="12">sit timer and LEDs fill</text>
+<rect x="548" y="100" width="184" height="56" rx="8" fill="rgba(248,81,73,.14)" stroke="#f85149" stroke-width="1.6"/>
+<text x="640" y="124" text-anchor="middle" fill="#e6edf3" font-weight="600" font-size="15">Break due</text>
+<text x="640" y="143" text-anchor="middle" fill="#8b949e" font-size="12">LEDs blink, buzzer beeps</text>
+<rect x="418" y="270" width="184" height="56" rx="8" fill="rgba(88,166,255,.12)" stroke="#58a6ff"/>
+<text x="510" y="294" text-anchor="middle" fill="#e6edf3" font-weight="600" font-size="15">On break</text>
+<text x="510" y="313" text-anchor="middle" fill="#8b949e" font-size="12">OLED counts break down</text>
+</g>
+<g font-family="IBM Plex Mono, monospace" font-size="11" fill="#8b949e">
+<text x="248" y="118" text-anchor="middle">seated 1 s</text>
+<text x="510" y="118" text-anchor="middle">limit hit</text>
+<text x="322" y="226" text-anchor="end">leaves desk</text>
+<text x="668" y="226">leaves desk</text>
+<text x="453" y="208">back early</text>
+<text x="453" y="224">(sit timer kept)</text>
+<text x="313" y="356" text-anchor="middle" fill="#f9826c">full break length away: break counted, timers reset</text>
+</g>
+<text x="24" y="40" font-family="DM Serif Display, serif" font-size="20" fill="#e6edf3">A break counts only after a full break length away</text>
+<text x="24" y="62" font-family="Source Sans 3, sans-serif" font-size="13" fill="#6e7681">Four modes; arrows show what moves you between them</text>
+</svg></figure>
+
+<p>Leaving always starts On break; only a full break length away counts the break and resets the sit and eye-rest timers.</p>
+<ul>
+<li><strong>Present</strong> means IR active for 5 straight reads (1 s). Absent means 5 straight inactive reads.</li>
+<li><strong>Object guard:</strong> IR active but no PIR motion for <code>OBJECT_GUARD_S</code> is treated as absent, and the OLED shows "Object?". The guard stays in real seconds even in <code>TEST_MODE</code>: scaled to 5 s, simply sitting still until the PIR drops would flag you as a bag.</li>
+<li><strong>Studying:</strong> sit timer, eye-rest timer and study minutes all count up each second.</li>
+<li><strong>Break due</strong> starts when the sit timer reaches the limit. Alert pattern every 5 s, plus one <code>break_time</code> event.</li>
+<li><strong>Skipped break:</strong> still seated <code>BREAK_GRACE_MIN</code> after the alert started. Counted once per cycle.</li>
+<li><strong>Leaving early</strong> (before the break length is up) and coming back returns you to your previous mode with the sit timer kept. A trip to the door is not a break.</li>
+<li><strong>Session end:</strong> away for the larger of <code>SESSION_END_MIN</code> and break length + 5 minutes.</li>
+</ul>
+</section><section class="section" id="enhancement-1-oled-status-display"><div class="section-label">Enhancement 01</div><h2>Enhancement 1: OLED status display</h2>
+<p>One screen, redrawn every 500 ms, shows the mode, both timers, a progress bar matching the LEDs, environment, distractions, focus score and connection state.</p>
+<h3>Layout (128 x 64)</h3>
+<div class="oled-wrap"><div class="oled" aria-label="OLED layout mock-up">
+<div class="oled-l big">STUDYING</div>
+<div class="oled-l">Sit 12:34&nbsp;&nbsp;Left 12:26</div>
+<div class="oled-bar"><span style="width:49%"></span></div>
+<div class="oled-l split"><span>28.5C 65%RH</span><span>D:3</span></div>
+<div class="oled-l split"><span>Focus 87</span><span>Online</span></div>
+</div>
+<table class="oled-key"><thead><tr><th>y</th><th>Row</th><th>Notes</th></tr></thead><tbody>
+<tr><td class="mono">0</td><td>Status word</td><td>Text size 2 (16 px tall, 10 chars max)</td></tr>
+<tr><td class="mono">20</td><td>Timers</td><td>On break: “Break counts in 03:12”</td></tr>
+<tr><td class="mono">31</td><td>Progress bar</td><td>Same fill as the LEDs</td></tr>
+<tr><td class="mono">42</td><td>Environment, distractions</td><td></td></tr>
+<tr><td class="mono">54</td><td>Focus, connection</td><td>Online / No cloud / Offline</td></tr>
+</tbody></table></div>
+
+<p>Status words: <code>STUDYING</code>, <code>BREAK TIME</code>, <code>ON BREAK</code>, <code>AWAY</code>, <code>OBJECT?</code>. During an eye-rest the whole screen switches to an overlay with a 20-second countdown.</p>
+<h3>Init</h3>
+<pre><code class="language-cpp">#include &lt;Wire.h&gt;
+#include &lt;Adafruit_GFX.h&gt;
+#include &lt;Adafruit_SSD1306.h&gt;
+
+Adafruit_SSD1306 oled(128, 64, &amp;Wire, -1);   // -1: no reset pin
+
+bool displayInit() {
+  Wire.begin(PIN_SDA, PIN_SCL);
+  Wire.setClock(400000);                       // 400 kHz: a full 1 KB frame still takes about 25 ms
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) // try 0x3D if this fails
+    return false;
+  oled.setTextColor(SSD1306_WHITE);
+  oled.clearDisplay();
+  oled.display();
+  return true;
+}
+</code></pre>
+<p>If <code>displayInit()</code> returns false, keep running without the screen and print a warning to Serial. A dead display must not stop the device.</p>
+<h3>Render</h3>
+<pre><code class="language-cpp">static void mmss(char* out, size_t n, uint32_t sec) {
+  snprintf(out, n, &quot;%02lu:%02lu&quot;, (unsigned long)(sec / 60), (unsigned long)(sec % 60));
+}
+
+void displayRender(const AppState&amp; a, bool wifiUp, bool cloudUp) {
+  const Live&amp; L = a.live;
+  const uint32_t limit = a.cfg.sitLimitMin * MIN_S;
+  const uint32_t brk   = a.cfg.breakMin * MIN_S;
+  char t1[8], t2[8];
+
+  oled.clearDisplay();
+
+  if (L.eyeRestLeft &gt; 0) {                         // eye-rest overlay
+    oled.setTextSize(2); oled.setCursor(0, 0);  oled.print(&quot;EYE REST&quot;);
+    oled.setTextSize(1); oled.setCursor(0, 22); oled.print(&quot;Look 20 ft (6 m) away&quot;);
+    oled.setTextSize(3); oled.setCursor(46, 38); oled.printf(&quot;%2u&quot;, L.eyeRestLeft);
+    oled.display();
+    return;
+  }
+
+  oled.setTextSize(2); oled.setCursor(0, 0);
+  switch (L.mode) {
+    case Mode::Studying: oled.print(&quot;STUDYING&quot;);   break;
+    case Mode::BreakDue: oled.print(&quot;BREAK TIME&quot;); break;
+    case Mode::OnBreak:  oled.print(&quot;ON BREAK&quot;);   break;
+    case Mode::Away:     oled.print(L.objectSuspected ? &quot;OBJECT?&quot; : &quot;AWAY&quot;); break;
+  }
+
+  oled.setTextSize(1); oled.setCursor(0, 20);
+  if (L.mode == Mode::OnBreak) {
+    mmss(t1, sizeof t1, L.awaySec &lt; brk ? brk - L.awaySec : 0);
+    oled.printf(&quot;Break counts in %s&quot;, t1);
+  } else {
+    mmss(t1, sizeof t1, L.sitSec);
+    mmss(t2, sizeof t2, L.sitSec &lt; limit ? limit - L.sitSec : 0);
+    oled.printf(&quot;Sit %s  Left %s&quot;, t1, t2);
+  }
+
+  uint32_t pct = limit ? L.sitSec * 100 / limit : 0;
+  if (pct &gt; 100) pct = 100;
+  oled.drawRect(0, 31, 128, 7, SSD1306_WHITE);
+  oled.fillRect(1, 32, (126 * pct) / 100, 5, SSD1306_WHITE);
+
+  oled.setCursor(0, 42);
+  if (isnan(L.tempC)) oled.print(&quot;--.-C --%RH&quot;);
+  else oled.printf(&quot;%.1fC %.0f%%RH&quot;, L.tempC, L.humidity);
+  oled.setCursor(98, 42);
+  oled.printf(&quot;D:%u&quot;, a.day.distractions);
+
+  oled.setCursor(0, 54);
+  if (L.focus &lt; 0) oled.print(&quot;Focus --&quot;);
+  else oled.printf(&quot;Focus %d&quot;, L.focus);
+  oled.setCursor(80, 54);
+  oled.print(wifiUp ? (cloudUp ? &quot;Online&quot; : &quot;No cloud&quot;) : &quot;Offline&quot;);
+
+  oled.display();
+}
+</code></pre>
+<p>In <code>TEST_MODE</code> the timers show real seconds, so a 25-minute limit appears as <code>00:25</code>. That is expected.</p>
+<h3>Burn-in protection</h3>
+<p>OLED pixels wear when the same image stays lit for hours. Dim the screen while you are away and turn it off once the session has ended; it wakes when you sit down.</p>
+<pre><code class="language-cpp">const bool idle = app.live.mode == Mode::Away;
+oled.dim(idle);
+oled.ssd1306_command((idle &amp;&amp; !app.ses.active) ? SSD1306_DISPLAYOFF : SSD1306_DISPLAYON);
+</code></pre>
+<h3>Gate checklist (phase 7)</h3>
+<ul class="checklist">
+<li class="check"><label><input type="checkbox" data-k="g1"><span>I2C scanner finds the OLED; the sketch still boots with the OLED unplugged.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g2"><span>Every mode shows its word, including OBJECT? with a bag in front of the IR sensor.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g3"><span>"Left" reaches 00:00 at the same moment the LEDs fill and the alert starts.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g4"><span>On break shows a countdown that ends exactly when the break counts.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g5"><span>Wi-Fi off shows Offline and the timers keep running.</span></label></li>
+</ul>
+</section><section class="section" id="enhancement-2-configurable-pomodoro-and-focus-score"><div class="section-label">Enhancement 02</div><h2>Enhancement 2: configurable Pomodoro and focus score</h2>
+<p>Two sliders set the routine, the state machine enforces it, and a 0-100 score summarises the day. Build it in two phases: settings and state machine first (phase 8), then the score (phase 9).</p>
+<h3>2a. Settings</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Datastream</th>
+<th>Range</th>
+<th>Default</th>
+<th>Presets worth demoing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sit limit</td>
+<td>V11</td>
+<td>10-60 min, step 5</td>
+<td>25</td>
+<td>25/5 Pomodoro, 30/5, 50/10</td>
+</tr>
+<tr>
+<td>Break length</td>
+<td>V12</td>
+<td>1-15 min</td>
+<td>5</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p>Validate on the device, never trust the slider, and save to flash so the routine survives a reboot without Wi-Fi.</p>
+<pre><code class="language-cpp">// cloud.ino
+bool settingsDirty = false;           // saved by taskPersist, not on every slider tick
+
+BLYNK_WRITE(V5)  { app.cfg.muted       = param.asInt() != 0;                settingsDirty = true; }
+BLYNK_WRITE(V6)  { app.cfg.noiseMargin = constrain(param.asInt(), 0, 2000); settingsDirty = true; }
+BLYNK_WRITE(V11) { app.cfg.sitLimitMin = constrain(param.asInt(), 10, 60);  settingsDirty = true; }
+BLYNK_WRITE(V12) { app.cfg.breakMin    = constrain(param.asInt(), 1, 15);   settingsDirty = true; }
+BLYNK_WRITE(V13) { app.cfg.eyeRestOn   = param.asInt() != 0;                settingsDirty = true; }
+BLYNK_WRITE(V9)  { if (param.asInt() == 1) resetToday(); }   // zero Daily + Session, keep settings
+
+BLYNK_CONNECTED() {
+  Blynk.syncVirtual(V5, V6, V11, V12, V13);   // pull dashboard settings
+  pushAll();                                   // one full refresh after (re)connect
+  flushSummary();                              // Enhancement 4
+}
+
+// in taskPersist (every 60 s)
+if (settingsDirty) { saveSettings(app.cfg); settingsDirty = false; }
+</code></pre>
+<div class="callout callout-warn"><p><strong>Set a default value on every In datastream in the Console</strong> (V5 = 0, V6 = your margin, V11 = 25, V12 = 5, V13 = 1). On connect, <code>syncVirtual</code> pulls whatever the cloud holds. I'm not certain what a never-touched datastream returns, and if it is 0, <code>constrain</code> turns it into a 10-minute limit. Defaults remove the question.</p></div>
+<p>A slider being dragged can fire many writes, which is why saving waits for <code>taskPersist</code>. Consequence: wait 60 s after a change before power-cycling, or the change is lost.</p>
+<div class="callout callout-danger"><p><strong>Flash survives re-uploads.</strong> A normal sketch upload does not erase NVS, so counters from a <code>TEST_MODE</code> session (where a "minute" is a second) would load into your real build and wreck the score. That is why <code>Daily.version</code> differs between the two builds: a mismatched blob is rejected. Before the defense, also wipe once: in the Arduino IDE, enable "Erase All Flash Before Sketch Upload" in the Tools menu for one upload, then turn it off again.</p></div>
+<p>Lowering the limit below the current sit time is fine: the next tick moves straight to Break due.</p>
+<pre><code class="language-cpp">// storage.cpp
+#include &lt;Preferences.h&gt;
+static Preferences prefs;
+
+void saveSettings(const Settings&amp; s) {
+  prefs.begin(&quot;deskpulse&quot;, false);
+  prefs.putBytes(&quot;cfg&quot;, &amp;s, sizeof s);
+  prefs.end();
+}
+
+bool loadSettings(Settings&amp; s) {
+  Settings tmp;
+  prefs.begin(&quot;deskpulse&quot;, true);
+  const bool ok = prefs.getBytes(&quot;cfg&quot;, &amp;tmp, sizeof tmp) == sizeof tmp;
+  prefs.end();
+  if (ok) s = tmp;
+  return ok;   // false on first boot: defaults stay
+}
+// saveDaily()/loadDaily(): same pattern with key &quot;day&quot;; reject a blob whose version differs
+</code></pre>
+<p>Save <code>Daily</code> from <code>taskPersist</code> once a minute, and only if it changed since the last save. That keeps flash writes low.</p>
+<h3>2b. State machine</h3>
+<p>This implements the diagram in the architecture section. It runs once per (catch-up) second.</p>
+<pre><code class="language-cpp">// session.cpp
+static uint32_t sitLimitSec() { return app.cfg.sitLimitMin * MIN_S; }
+static uint32_t breakSec()    { return app.cfg.breakMin * MIN_S; }
+static uint32_t sessionEndSec() {
+  uint32_t m = app.cfg.breakMin + 5;
+  if (m &lt; SESSION_END_MIN) m = SESSION_END_MIN;
+  return m * MIN_S;
+}
+
+static void setMode(Mode m) {
+  if (app.live.mode == m) return;
+  app.live.mode = m;
+  onSignal(Signal::ModeChanged);
+}
+
+static void completeBreak() {
+  Live&amp; L = app.live;
+  if (L.sitSec &gt;= sitLimitSec() &amp;&amp; L.dueSec &lt; BREAK_GRACE_MIN * MIN_S)
+    app.day.breaksOnTime++;
+  app.day.breaksTaken++;
+  app.ses.breaks++;
+  L.sitSec = L.dueSec = L.eyeSec = 0;
+  L.skipCounted = false;
+  setMode(Mode::Away);
+}
+
+void sessionTick() {
+  Live&amp; L = app.live;
+  if (L.present) {
+    L.awaySec = 0;
+    if (!app.ses.active) { app.ses = Session{}; app.ses.active = true; }
+    if (L.mode == Mode::Away || L.mode == Mode::OnBreak)       // back at the desk
+      setMode(L.sitSec &gt;= sitLimitSec() ? Mode::BreakDue : Mode::Studying);
+
+    L.sitSec++; app.day.studySec++; app.ses.studySec++;
+    tickEyeRest();                                             // Enhancement 3
+
+    if (L.mode == Mode::Studying &amp;&amp; L.sitSec &gt;= sitLimitSec()) {
+      setMode(Mode::BreakDue);
+      onSignal(Signal::BreakDue);                              // once per cycle
+    }
+    if (L.mode == Mode::BreakDue) {
+      L.dueSec++;
+      if (!L.skipCounted &amp;&amp; L.dueSec &gt;= BREAK_GRACE_MIN * MIN_S) {
+        app.day.breaksSkipped++;
+        L.skipCounted = true;
+      }
+    }
+  } else {
+    L.awaySec++;
+    L.eyeRestLeft = 0;                                         // left the desk: overlay off
+    if (L.mode == Mode::Studying || L.mode == Mode::BreakDue) setMode(Mode::OnBreak);
+    if (L.mode == Mode::OnBreak &amp;&amp; L.awaySec &gt;= breakSec()) completeBreak();
+    if (app.ses.active &amp;&amp; L.awaySec &gt;= sessionEndSec()) {
+      app.ses.active = false;
+      onSignal(Signal::SessionEnded);                          // Enhancement 4
+    }
+  }
+  L.focus = computeFocus(app.day);
+}
+</code></pre>
+<p>The buzzer and LED blink follow <code>mode == BreakDue</code>, so the alert resumes on its own if you come back early.</p>
+<div class="callout callout-info"><p><strong>Consider backing off the alarm.</strong> As written, the buzzer double-beeps every 5 s for as long as you ignore it; an hour on a call is 720 beeps. A reasonable rule: every 5 s during the grace window, then every 30 s once the skip has been counted. The LEDs keep blinking either way.</p></div>
+<h3>2c. Focus score</h3>
+<p>The score starts at 100 and loses points for skipped breaks and for the distraction <strong>rate</strong>. It stays hidden (<code>--</code>) until you have 10 minutes of study time.</p>
+<div class="formula">
+<div class="f-main"><var>F</var> = max(0, 100 &minus; min(45, 15<var>S</var>) &minus; min(40, 4<var>R</var>) &minus; <var>P</var><sub>idle</sub>)</div>
+<div class="f-sub"><var>R</var> = 60<var>D</var> / max(<var>T</var>, 30)</div>
+</div>
+
+<p>T = study minutes today, D = distractions today, S = breaks skipped (not taken within the 5-minute grace), R = distractions per hour. P<sub>idle</sub> = min(15, 15 × idle share of study time), and is 0 unless the MPU6050 is fitted.</p>
+<p>Why it is built this way:</p>
+<ul>
+<li><strong>Rate, not count:</strong> 6 distractions over 4 hours is better focus than 6 in 30 minutes. This is where study minutes enter the score.</li>
+<li><strong>30-minute floor on T:</strong> without it, one clap in the first 10 minutes would read as 6 per hour.</li>
+<li><strong>Caps:</strong> no single factor can drive the score to 0 alone.</li>
+<li><strong>Breaks:</strong> "on time" means taken within the grace window. A late break counts as skipped.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Study T</th>
+<th>Distractions D</th>
+<th>Skipped S</th>
+<th>Rate R</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8 min</td>
+<td>1</td>
+<td>0</td>
+<td>-</td>
+<td><code>--</code> (under 10 min)</td>
+</tr>
+<tr>
+<td>20 min</td>
+<td>4</td>
+<td>0</td>
+<td>8.0 / h</td>
+<td>68</td>
+</tr>
+<tr>
+<td>50 min</td>
+<td>2</td>
+<td>0</td>
+<td>2.4 / h</td>
+<td>90</td>
+</tr>
+<tr>
+<td>120 min</td>
+<td>6</td>
+<td>1</td>
+<td>3.0 / h</td>
+<td>73</td>
+</tr>
+<tr>
+<td>180 min</td>
+<td>30</td>
+<td>3</td>
+<td>10.0 / h</td>
+<td>15</td>
+</tr>
+</tbody>
+</table></div>
+<p>Use these rows as test cases in phase 9: feed the counters by hand over Serial and compare.</p>
+<pre><code class="language-cpp">// DeskPulse.ino — test hook; call from loop(), does nothing unless TEST_MODE
+// Type into Serial Monitor:  t=120 d=6 s=1   → sets today's counters, prints the score
+void serialTestHook() {
+  if (!TEST_MODE || !Serial.available()) return;
+  String line = Serial.readStringUntil('\n');
+  int t, d, s;
+  if (sscanf(line.c_str(), &quot;t=%d d=%d s=%d&quot;, &amp;t, &amp;d, &amp;s) == 3) {
+    app.day.studySec = t * MIN_S;
+    app.day.distractions = d;
+    app.day.breaksSkipped = s;
+    Serial.printf(&quot;focus=%d\n&quot;, computeFocus(app.day));
+  }
+}
+</code></pre>
+<pre><code class="language-cpp">int8_t computeFocus(const Daily&amp; d) {
+  const float studyMin = d.studySec / (float)MIN_S;
+  if (studyMin &lt; 10) return -1;                               // not enough data
+  const float perHour = d.distractions * 60.0f / (studyMin &lt; 30 ? 30.0f : studyMin);
+  float penalty = fminf(45.0f, 15.0f * d.breaksSkipped)
+                + fminf(40.0f, 4.0f * perHour);
+  if (USE_MPU &amp;&amp; d.studySec &gt; 0)
+    penalty += fminf(15.0f, 15.0f * d.idleSec / (float)d.studySec);
+  const long score = lroundf(100.0f - penalty);
+  return (int8_t)(score &lt; 0 ? 0 : score);
+}
+</code></pre>
+<div class="callout callout-warn"><p><strong>Be upfront about this in the defense:</strong> the weights (15, 4, 45, 40) are design choices, not a validated productivity metric. They are constants in one function, so tuning them is a one-line change.</p></div>
+<h3>2d. Daily rollover and history</h3>
+<p>At local midnight the final score goes to V15 (Daily Focus), then today's counters reset. A 7-day chart on V15 is the weekly view.</p>
+<pre><code class="language-cpp">void taskRollover() {
+  struct tm now;
+  if (!getLocalTime(&amp;now, 0)) return;   // 0 ms wait: the default waits up to 5 s
+  const uint32_t ymd = (now.tm_year + 1900) * 10000 + (now.tm_mon + 1) * 100 + now.tm_mday;
+  if (app.day.ymd == 0) { app.day.ymd = ymd; return; }      // fresh counters, first sync
+  if (ymd == app.day.ymd) return;                           // same day (also after a reboot)
+  onSignal(Signal::DayRolled);                              // writes the final score to V15
+  app.day = Daily{};
+  app.day.ymd = ymd;
+}
+</code></pre>
+<p>This also covers a reboot: restored counters from today are kept, and counters from an earlier day are closed out on the first NTP sync. One quirk: if the device was off at midnight, yesterday's score is stamped with today's time in Blynk.</p>
+<div class="callout callout-info"><p><strong>No NTP, no date.</strong> The ESP32 has no battery-backed clock. If it boots without Wi-Fi and stays offline past midnight, two days of counters merge into one. That is acceptable for a desk demo; a DS3231 RTC module on the same I2C bus would fix it if a panel asks.</p></div>
+<h3>Gate checklist (phases 8-9)</h3>
+<ul class="checklist">
+<li class="check"><label><input type="checkbox" data-k="g6"><span>V11 and V12 changes show on the OLED within a second and survive a power cycle (after the 60 s save).</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g7"><span>Leaving for less than the break length keeps the sit timer.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g8"><span>Staying seated through the grace window adds exactly one skip.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g9"><span>All five score rows above reproduce.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g10"><span>Power-cycling mid-day restores today's counters.</span></label></li>
+</ul>
+</section><section class="section" id="enhancement-3-20-20-20-eye-rest-reminder"><div class="section-label">Enhancement 03</div><h2>Enhancement 3: 20-20-20 eye-rest reminder</h2>
+<p>After every 20 minutes at the desk, the device chirps three times, sweeps the LEDs once, shows a 20-second countdown on the OLED and logs an <code>eye_rest</code> event. It is skipped when a break is due within 3 minutes, because the break rests your eyes anyway.</p>
+<h3>Rules</h3>
+<ul>
+<li>The eye timer counts only while you are seated and not in Break due.</li>
+<li>It resets whenever a break completes, together with the sit timer.</li>
+<li>Leaving the desk during the countdown ends it. Looking away was the point.</li>
+<li>V13 turns the feature off entirely.</li>
+</ul>
+<p>How it interacts with the sit limit:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Sit limit</th>
+<th>Eye-rest fires at</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20 min</td>
+<td>Never</td>
+<td>The break itself arrives at 20</td>
+</tr>
+<tr>
+<td>25 min (Pomodoro)</td>
+<td>20</td>
+<td>20 + 3 is still before 25</td>
+</tr>
+<tr>
+<td>30 min</td>
+<td>20</td>
+<td>The next one would land after the break</td>
+</tr>
+<tr>
+<td>50 min</td>
+<td>20, 40</td>
+<td>40 + 3 is still before 50</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Code</h3>
+<pre><code class="language-cpp">// session.cpp — called from sessionTick() while present
+void tickEyeRest() {
+  Live&amp; L = app.live;
+  if (L.eyeRestLeft &gt; 0) { L.eyeRestLeft--; return; }        // countdown running
+  if (!app.cfg.eyeRestOn || L.mode == Mode::BreakDue) return;
+  if (++L.eyeSec &lt; EYE_INTERVAL_MIN * MIN_S) return;
+  L.eyeSec = 0;
+  if (L.sitSec + EYE_SKIP_WINDOW_MIN * MIN_S &gt;= sitLimitSec()) return;  // break is close
+  L.eyeRestLeft = EYE_REST_SECONDS;
+  onSignal(Signal::EyeRest);
+}
+</code></pre>
+<pre><code class="language-cpp">// DeskPulse.ino — inside onSignal()
+case Signal::EyeRest:
+  if (!app.cfg.muted) buzzerPlay(Pattern::Chirp3);   // 3 short chirps
+  ledSweep();                                          // one quick blue-to-red sweep
+  if (Blynk.connected())
+    Blynk.logEvent(&quot;eye_rest&quot;, &quot;Look at something 20 ft (6 m) away for 20 seconds&quot;);
+  break;
+</code></pre>
+<p><code>buzzerPlay()</code> queues a pattern for the non-blocking sequencer you had in 1.0. Give eye-rest a lighter pattern than the break alert so the two are easy to tell apart by ear.</p>
+<p><strong>Event budget:</strong> with a 25/5 routine you get about one eye-rest and one break event per 30 minutes, roughly 33 events over an 8-hour day including summaries. That stays well under the 100-per-day cap.</p>
+<div class="callout callout-info"><p><strong>Keep the eye-rest push on.</strong> Your proposal says the reminder comes "along with a Blynk notification", so a timeline-only event would quietly under-deliver. If pushes every 20 minutes feel like spam in testing, switch to timeline-only after grading, or state the change and the reason in the write-up.</p></div>
+<h3>Gate checklist (phase 10)</h3>
+<ul class="checklist">
+<li class="check"><label><input type="checkbox" data-k="g11"><span>With a 25 limit in <code>TEST_MODE</code>, the overlay appears at 20 s and lasts 5 s.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g12"><span>With a 20 limit, it never appears.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g13"><span>Muted: overlay and LED sweep still happen, buzzer stays silent.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g14"><span>Standing up during the countdown clears it.</span></label></li>
+</ul>
+</section><section class="section" id="enhancement-4-session-summary-notification"><div class="section-label">Enhancement 04</div><h2>Enhancement 4: session summary notification</h2>
+<p>When you have been away for the session-end time (10 minutes, or break length + 5 if longer), the device sends one <code>session_summary</code> event, for example: <em>"You studied 52 min, took 2 breaks, had 4 distractions. Focus today: 81."</em></p>
+<h3>Rules</h3>
+<ul>
+<li>A session starts the first time you sit down after the previous one ended.</li>
+<li>Sessions shorter than 5 study minutes send nothing. Sitting down to grab a pen is not a session.</li>
+<li><strong>The final departure is not a break.</strong> It does count as one in the state machine, because you were away for the full break length before the session ended. Subtract it in the summary.</li>
+<li>If Blynk is offline, the summary waits and is sent on reconnect. Only the latest one is kept.</li>
+</ul>
+<h3>Code</h3>
+<pre><code class="language-cpp">// DeskPulse.ino
+char pendingSummary[200] = &quot;&quot;;       // event descriptions are capped at 300 characters
+
+void flushSummary() {                 // also call this from BLYNK_CONNECTED()
+  if (pendingSummary[0] &amp;&amp; Blynk.connected()) {
+    Blynk.logEvent(&quot;session_summary&quot;, pendingSummary);
+    pendingSummary[0] = '\0';
+  }
+}
+
+// inside onSignal()
+case Signal::SessionEnded: {
+  const uint32_t mins = app.ses.studySec / MIN_S;
+  if (mins &lt; MIN_SUMMARY_MIN) break;
+  const uint16_t breaks = app.ses.breaks &gt; 0 ? app.ses.breaks - 1 : 0;  // drop the final departure
+  const uint16_t dist = app.ses.distractions;
+  char focus[6];
+  if (app.live.focus &lt; 0) strcpy(focus, &quot;--&quot;);
+  else snprintf(focus, sizeof focus, &quot;%d&quot;, app.live.focus);
+  snprintf(pendingSummary, sizeof pendingSummary,
+           &quot;You studied %lu min, took %u break%s, had %u distraction%s. Focus today: %s.&quot;,
+           (unsigned long)mins, breaks, breaks == 1 ? &quot;&quot; : &quot;s&quot;,
+           dist, dist == 1 ? &quot;&quot; : &quot;s&quot;, focus);
+  flushSummary();
+  break;
+}
+</code></pre>
+<p>Distractions are added to <code>app.ses.distractions</code> in the sound module, next to the daily counter, and only while you are present.</p>
+<h3>Gate checklist (phase 11)</h3>
+<ul class="checklist">
+<li class="check"><label><input type="checkbox" data-k="g15"><span>In <code>TEST_MODE</code>: sit 30 s, take one 5 s break, sit again, then leave for 10 s. Exactly one summary arrives, saying 1 break.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g16"><span>Sitting 3 s and leaving sends nothing.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g17"><span>With Wi-Fi off at session end, the summary arrives once after reconnecting.</span></label></li>
+<li class="check"><label><input type="checkbox" data-k="g18"><span>The push reaches your phone and shows the full summary text, not just the event name. Then trigger two break reminders 2 minutes apart: both must arrive (Limit Period check).</span></label></li>
+</ul>
+</section><section class="section" id="optional-mpu6050-typing-activity-detection"><div class="section-label">Stretch goal</div><h2>Optional: MPU6050 typing-activity detection</h2>
+<p>Do a 30-minute feasibility test before writing any integration code. If typing does not clearly stand out from rest on your actual desk, drop the feature and report that as a finding.</p>
+<h3>Wiring and mounting</h3>
+<ul>
+<li>GY-521 VCC to 3V3, GND, SDA to 21, SCL to 22. Leave AD0 unconnected (address <code>0x68</code>).</li>
+<li>Mount the module flat on the desk surface near the keyboard, taped or hot-glued down. Not on the breadboard: touching jumper wires would read as typing.</li>
+<li>Keep the I2C lead short. If you see read errors on a longer run, drop the bus to 100 kHz.</li>
+</ul>
+<h3>Feasibility test</h3>
+<ol>
+<li>Flash a sketch that prints the 1-second vibration energy (code below) to the Serial Plotter.</li>
+<li>Type for 30 s, then sit still with hands off for 30 s. Repeat three times.</li>
+<li><strong>Go</strong> if every typing stretch sits clearly above the resting band. <strong>No-go</strong> if they overlap.</li>
+</ol>
+<p>Test with the keyboard you will demo on. A laptop keyboard may pass less vibration into the desk than an external one; I don't know how much on your setup.</p>
+<h3>Detection</h3>
+<pre><code class="language-cpp">#include &lt;Adafruit_MPU6050.h&gt;
+Adafruit_MPU6050 mpu;
+float activityThreshold = 0;          // set by a 5 s calibration at boot, hands off
+
+bool activityInit() {
+  if (!mpu.begin(0x68, &amp;Wire)) return false;
+  mpu.setAccelerometerRange(MPU6050_RANGE_2_G);   // most sensitive range
+  mpu.setFilterBandwidth(MPU6050_BAND_94_HZ);     // keeps short taps; tune
+  return true;
+}
+
+// every 20 ms → 50 samples per 1 s window
+void taskActivity() {
+  static float avg = 0, energy = 0;
+  static uint8_t n = 0;
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&amp;a, &amp;g, &amp;temp);
+  const float mag = sqrtf(a.acceleration.x * a.acceleration.x +
+                          a.acceleration.y * a.acceleration.y +
+                          a.acceleration.z * a.acceleration.z);
+  if (avg == 0) avg = mag;
+  avg += 0.02f * (mag - avg);           // slow average ≈ gravity
+  energy += fabsf(mag - avg);           // vibration on top of it
+  if (++n &gt;= 50) {
+    windowResult(energy / n &gt; activityThreshold);
+    energy = 0;
+    n = 0;
+  }
+}
+</code></pre>
+<ul>
+<li><strong>Calibration:</strong> during the 5 s, record each window's energy; start with threshold = mean + 4 standard deviations, then tune from the plot.</li>
+<li><strong>Active</strong> = at least 3 of the last 10 windows above threshold.</li>
+<li><strong>Idle</strong> = present but not active for 2 minutes straight. Each idle second adds to <code>app.day.idleSec</code>.</li>
+</ul>
+<h3>How it enters the score</h3>
+<p>Idle is not the same as unproductive: reading, handwriting notes and watching a lecture all look idle. So the idle penalty is capped at 15 points and is applied only when <code>USE_MPU</code> is true. My recommendation is to show "Active minutes" (V16) on the dashboard and keep it out of the score unless your feasibility test was convincing.</p>
+</section><section class="section" id="blynk-setup"><div class="section-label">Cloud</div><h2>Blynk setup</h2>
+<p>Extend your 1.0 template: keep V0-V9, add V10-V15 (V16 only with the MPU6050), and create three events. Every outgoing value has a send rule so the whole device stays near 500 messages per hour at worst.</p>
+<h3>Credentials</h3>
+<pre><code class="language-cpp">// secrets.h — add to .gitignore, never commit it
+#pragma once
+#define BLYNK_TEMPLATE_ID   &quot;TMPLxxxxxxxx&quot;
+#define BLYNK_TEMPLATE_NAME &quot;DeskPulse&quot;
+#define BLYNK_AUTH_TOKEN    &quot;your-device-token&quot;
+#define WIFI_SSID           &quot;your-ssid&quot;
+#define WIFI_PASS           &quot;your-password&quot;
+</code></pre>
+<p>In <code>DeskPulse.ino</code>, include <code>secrets.h</code> <strong>before</strong> <code>BlynkSimpleEsp32.h</code>; the template defines must exist before the Blynk headers load. Print <code>WiFi.status()</code> at boot so a mistyped SSID (1.0's offline bug) is obvious.</p>
+<h3>Datastreams</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Name</th>
+<th>Dir</th>
+<th>Type, range</th>
+<th>Widget</th>
+<th>Sent when</th>
+<th>New</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V0</td>
+<td>Study Minutes</td>
+<td>Out</td>
+<td>Int 0-1440</td>
+<td>Label</td>
+<td>Every 60 s, if changed</td>
+<td></td>
+</tr>
+<tr>
+<td>V1</td>
+<td>Distractions</td>
+<td>Out</td>
+<td>Int 0-999</td>
+<td>Label</td>
+<td>On change</td>
+<td></td>
+</tr>
+<tr>
+<td>V2</td>
+<td>Temperature</td>
+<td>Out</td>
+<td>Double 0-50 °C</td>
+<td>Gauge</td>
+<td>Every 60 s, if moved ≥ 0.5 °C</td>
+<td></td>
+</tr>
+<tr>
+<td>V3</td>
+<td>Humidity</td>
+<td>Out</td>
+<td>Double 0-100 %</td>
+<td>Gauge</td>
+<td>Every 60 s, if moved ≥ 2 %</td>
+<td></td>
+</tr>
+<tr>
+<td>V4</td>
+<td>Noise Peak</td>
+<td>Out</td>
+<td>Int 0-4095</td>
+<td>Chart</td>
+<td>Every 30 s, the window's maximum</td>
+<td></td>
+</tr>
+<tr>
+<td>V5</td>
+<td>Mute Buzzer</td>
+<td>In</td>
+<td>Int 0-1</td>
+<td>Switch</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>V6</td>
+<td>Sensitivity</td>
+<td>In</td>
+<td>Int 0-2000</td>
+<td>Slider</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>V7</td>
+<td>At Desk</td>
+<td>Out</td>
+<td>Int 0-1</td>
+<td>LED</td>
+<td>On change</td>
+<td></td>
+</tr>
+<tr>
+<td>V8</td>
+<td>Sit Progress</td>
+<td>Out</td>
+<td>Int 0-100 %</td>
+<td>Gauge</td>
+<td>Every 30 s, if changed</td>
+<td></td>
+</tr>
+<tr>
+<td>V9</td>
+<td>Reset Counters</td>
+<td>In</td>
+<td>Int 0-1</td>
+<td>Button, Push mode</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>V10</td>
+<td>Focus Score</td>
+<td>Out</td>
+<td>Int 0-100</td>
+<td>Gauge</td>
+<td>Every 60 s, if changed</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>V11</td>
+<td>Sit Limit</td>
+<td>In</td>
+<td>Int 10-60 min</td>
+<td>Slider, step 5</td>
+<td></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>V12</td>
+<td>Break Length</td>
+<td>In</td>
+<td>Int 1-15 min</td>
+<td>Slider</td>
+<td></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>V13</td>
+<td>Eye-Rest On</td>
+<td>In</td>
+<td>Int 0-1</td>
+<td>Switch</td>
+<td></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>V14</td>
+<td>Status</td>
+<td>Out</td>
+<td>String</td>
+<td>Label</td>
+<td>On mode change</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>V15</td>
+<td>Daily Focus</td>
+<td>Out</td>
+<td>Int 0-100</td>
+<td>Chart, 7-day range</td>
+<td>Once at midnight</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>V16</td>
+<td>Active Minutes</td>
+<td>Out</td>
+<td>Int 0-1440</td>
+<td>Label</td>
+<td>Every 60 s (MPU only)</td>
+<td>Optional</td>
+</tr>
+</tbody>
+</table></div>
+<p>Datastream details that are easy to miss: give V2 and V3 one decimal place in the datastream settings, or the gauges show rounded values. If a chart stays empty, check the datastream's history options in its advanced settings first.</p>
+<h3>Events</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event code</th>
+<th>Fired</th>
+<th>Notification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>break_time</code></td>
+<td>On entering Break due</td>
+<td>Push on</td>
+</tr>
+<tr>
+<td><code>eye_rest</code></td>
+<td>Every 20 min at the desk</td>
+<td>Push on (promised in the proposal)</td>
+</tr>
+<tr>
+<td><code>session_summary</code></td>
+<td>Session end, with the summary text</td>
+<td>Push on</td>
+</tr>
+</tbody>
+</table></div>
+<p>The event code in the Console must match the string in <code>Blynk.logEvent()</code> exactly. Phone pushes need the Blynk IoT app installed and signed in; your mobile dashboard does not have to be finished for pushes to arrive.</p>
+<div class="callout callout-danger"><p><strong>Event settings that silently swallow notifications.</strong> Check each of the three events in the Console:</p><ul>
+<li><strong>General tab:</strong> "Show event on the Timeline" on. Blynk's docs say the custom description is rendered on the timeline only when this is enabled.</li>
+<li><strong>Notifications tab:</strong> notifications enabled, and push recipients set (Device Owner). Logging an event does not notify anyone by itself.</li>
+<li><strong>Limit Period:</strong> this allows only one notification per period. Community threads show it at 1 hour, which would let only the first break reminder each hour reach your phone. The rest are still logged and still count toward the 100-per-day cap. Set it to the shortest option (the community recommends 1 minute) and Event Counter to 1.</li>
+</ul></div>
+<p>The docs only promise the custom description on the timeline. Community posts say it also appears in the push, but I couldn't confirm that from the docs, so the phase 11 gate checks it on a real phone.</p>
+<h3>Message budget</h3>
+<p>Worst case for one hour at the desk (my estimate from the send rules above):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Max per hour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V4 noise, every 30 s</td>
+<td>120</td>
+</tr>
+<tr>
+<td>V8 progress, every 30 s</td>
+<td>120</td>
+</tr>
+<tr>
+<td>V2 + V3, every 60 s</td>
+<td>120</td>
+</tr>
+<tr>
+<td>V0 study minutes</td>
+<td>60</td>
+</tr>
+<tr>
+<td>V10 focus score</td>
+<td>60</td>
+</tr>
+<tr>
+<td>V1, V7, V14 on change</td>
+<td>about 20</td>
+</tr>
+<tr>
+<td>Events</td>
+<td>about 4</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>about 500</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>At 100,000 messages a month that is roughly 200 desk hours. Real use is lower, since temperature and humidity rarely change. If you need more headroom, V4 is the first thing to cut.</p>
+<h3>Push helper</h3>
+<pre><code class="language-cpp">// cloud.ino
+struct Cached { int32_t last = INT32_MIN; };
+static Cached cV0, cV1, cV4, cV7, cV8, cV10;
+
+static void pushInt(int pin, int32_t v, Cached&amp; c) {
+  if (!Blynk.connected() || v == c.last) return;   // unchanged values cost nothing
+  Blynk.virtualWrite(pin, v);
+  c.last = v;
+}
+
+void pushAll() {                // after (re)connect: clear the cache, send everything once
+  cV0 = cV1 = cV4 = cV7 = cV8 = cV10 = Cached{};
+  // ...push every Out value, then V14 status
+}
+</code></pre>
+<h3>Dashboard</h3>
+<p>The proposal promises the focus score on a gauge <strong>and</strong> a chart "across the day or week". So put two widgets on V10 (a gauge, plus a chart set to a 1-day range) and a chart on V15 set to 7 days.</p>
+<p>The current limits page lists no per-page widget cap for Free, but older revisions listed 10 widgets per page. If you hit a cap, keep these ten: Focus gauge and day chart (V10), Daily focus chart (V15), Status (V14), Sit progress (V8), Study minutes (V0), Distractions (V1), Sit limit (V11), Break length (V12), Mute (V5). Move eye-rest (V13), temperature and humidity to the mobile dashboard; the last two are on the OLED anyway.</p>
+<div class="callout callout-info"><p><strong>V15 needs real days.</strong> It gets one point per midnight, so run the device on several real days before the defense if you want a weekly chart with more than one dot. With 1 week of retention, 7 points is the most it will ever show.</p></div>
+</section><section class="section" id="integration-test-plan"><div class="section-label">Testing</div><h2>Integration test plan</h2>
+<p>Run all tests with <code>TEST_MODE = true</code> and the defaults (25/5), where one app minute lasts 1 s. Tests 1-5 are 1.0's tests repeated as a regression check; 6-17 cover 2.0.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Test</th>
+<th>Steps</th>
+<th>Pass when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Presence</td>
+<td>Sit 10-15 cm from the IR sensor</td>
+<td>OLED shows STUDYING, LEDs start filling, V7 = 1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Break alert</td>
+<td>Keep sitting past 25 s</td>
+<td>BREAK TIME, LEDs blink, double-beep every 5 s, one <code>break_time</code> event</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Break taken</td>
+<td>Leave for 5 s or more</td>
+<td>ON BREAK countdown, then AWAY; LEDs off; sit timer 00:00</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Distraction</td>
+<td>Sit, clap once</td>
+<td>D goes up by exactly 1; clapping while away adds nothing</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Mute</td>
+<td>V5 on, trigger an alert</td>
+<td>LEDs blink, buzzer silent</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Early return</td>
+<td>During BREAK TIME leave 2 s, come back</td>
+<td>Alert resumes; sit timer was kept</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Skipped break</td>
+<td>Stay seated 5 s past the alert</td>
+<td>Skip count +1, once; focus drops by 15 when shown</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Eye-rest fires</td>
+<td>Sit with a 25 limit</td>
+<td>Overlay at about 20 s, chirps, <code>eye_rest</code> event</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Eye-rest skipped</td>
+<td>Set V11 to 20, sit</td>
+<td>No overlay before the break</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Sliders</td>
+<td>Change V11 and V12 mid-session</td>
+<td>OLED countdowns change within 1 s</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Settings persist</td>
+<td>Change sliders, wait 60 s, power-cycle with Wi-Fi off</td>
+<td>New sit limit and break length still active</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Counters persist</td>
+<td>Build up counters, power-cycle</td>
+<td>Today's counters and focus restored after NTP sync</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Focus score</td>
+<td>Reproduce the five worked examples</td>
+<td>Each score matches the table</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Session summary</td>
+<td>Sit 30 s, break 5 s, sit, leave 10 s</td>
+<td>One summary: correct minutes, 1 break</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Offline operation</td>
+<td>Turn the router off mid-session</td>
+<td>OLED shows Offline, timers keep correct time, data resyncs on reconnect</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Object guard</td>
+<td>Put a bag in front of the IR, leave the room</td>
+<td>OBJECT? after the guard time; study time stops</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Message budget</td>
+<td><code>TEST_MODE = false</code>, sit 1 real hour</td>
+<td>Blynk.Console counter rises by about 500 or less</td>
+</tr>
+</tbody>
+</table></div>
+<p>Record pass/fail with the date for each row. The table doubles as evidence for your write-up.</p>
+</section><section class="section" id="project-logistics"><div class="section-label">Logistics</div><h2>Project logistics</h2>
+<p>These are not firmware problems, but each one has sunk projects like this before.</p>
+<ul>
+<li><strong>Freeze 1.0 first.</strong> Commit <code>study_monitor.ino</code>, <code>BUILD_GUIDE.md</code> and <code>SESSION_HANDOFF.md</code> to a git repo and tag it <code>v1.0</code> before you change anything. Then make one commit per passed gate, so a broken phase can be diffed against the last green one.</li>
+<li><strong>Pin library versions.</strong> Once phase 1 compiles, record the ESP32 core, Blynk, Adafruit SSD1306/GFX, DHT and MPU6050 versions in a README. Don't update mid-project. I have not verified the current Blynk library against ESP32 core 3.x; phase 1's compile gate is where you find out.</li>
+<li><strong>Blynk Free allows 1 user.</strong> Only one group member can log into the Console. Decide who owns it, and share <code>secrets.h</code> privately, never in the repo.</li>
+<li><strong>Split by module.</strong> If the work is shared across the group, <code>AppState</code> and <code>Signal</code> are the seams. For example: wiring and bench tests (phases 2-5), core and state machine (6, 8), OLED and eye-rest (7, 10), Blynk, score and summary (9, 11). Merge often; the <code>.ino</code> tabs are the conflict hotspot.</li>
+<li><strong>Plan the demo now.</strong> A panel won't wait 25 minutes. Flash a <code>TEST_MODE</code> build for the live demo and label which build is on the board. Bring evidence from real-time use: V10 and V15 charts and a real summary push, as screenshots.</li>
+<li><strong>Physical layout.</strong> The IR sensor must sit 10-15 cm from your torso, the OLED must face you, and the microphone should be as far from the buzzer as the breadboard allows. Decide where the board sits on the desk before final wiring; use longer jumpers for the IR head rather than for I2C. Then retest the IR in defense conditions: these modules reflect less off black or dark fabric and can be blinded by sunlight or strong lamps. Check the 10-15 cm range wearing what you will wear, in the room you will demo in, and bring a small screwdriver for the pots.</li>
+<li><strong>Power.</strong> Use a laptop port or a 5 V adapter rated 1 A or more, with a data-capable cable. Wi-Fi transmit bursts can brown out a weak port; the sign is random resets with "Brownout detector was triggered" on Serial.</li>
+<li><strong>Cut line.</strong> All four enhancements are promised; only the MPU6050 is "if time permits". If time runs short, cut in this order: the MPU6050, the V4 noise chart, mobile dashboard polish. Do not cut a promised enhancement.</li>
+</ul>
+</section><section class="section" id="known-limitations-and-defense-notes"><div class="section-label">Defense</div><h2>Known limitations and defense notes</h2>
+<p>2.0 fixes one of 1.0's limitations outright (counters now survive reboots) and keeps the rest. Say these plainly in the defense; a panel trusts a system whose limits you can name.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Limitation</th>
+<th>Status in 2.0</th>
+<th>What to say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IR range 10-15 cm</td>
+<td>Unchanged</td>
+<td>Mount at the desk edge, aimed at the torso</td>
+</tr>
+<tr>
+<td>No identity</td>
+<td>Unchanged</td>
+<td>Anyone seated accumulates study time</td>
+</tr>
+<tr>
+<td>PIR sees the whole room</td>
+<td>Unchanged</td>
+<td>The object guard reduces false study time, not to zero. It also cuts the other way: sitting very still for 5 minutes (deep reading) can be read as an object</td>
+</tr>
+<tr>
+<td>Lost counters on reboot</td>
+<td><strong>Fixed</strong></td>
+<td>Today's counters and settings are saved in flash</td>
+</tr>
+<tr>
+<td>Sound is amplitude only</td>
+<td>Unchanged</td>
+<td>A sneeze, a door and a voice are the same event</td>
+</tr>
+<tr>
+<td>DHT11 accuracy</td>
+<td>Unchanged</td>
+<td>Fine for "is the room uncomfortable", not for precision</td>
+</tr>
+<tr>
+<td>Noise baseline set once at boot</td>
+<td>Unchanged</td>
+<td>Reboot to recalibrate. Cheap fix if asked: re-learn it slowly while AWAY</td>
+</tr>
+<tr>
+<td>Eye-rest compliance</td>
+<td>New, by design</td>
+<td>Nothing can verify where you looked, so it is a reminder and is not scored</td>
+</tr>
+<tr>
+<td>Focus score validity</td>
+<td>New, by design</td>
+<td>A transparent heuristic with chosen weights, not a validated metric</td>
+</tr>
+<tr>
+<td>Idle vs. reading (MPU)</td>
+<td>New, by design</td>
+<td>Accelerometer idle is not unproductive; hence the 15-point cap</td>
+</tr>
+<tr>
+<td>Blynk Free plan</td>
+<td>New constraint</td>
+<td>100,000 messages a month, 3 usable custom events, 1 week of history</td>
+</tr>
+<tr>
+<td>OLED burn-in</td>
+<td>New, mitigated</td>
+<td>Dims when away, switches off after the session ends</td>
+</tr>
+</tbody>
+</table></div>
+<div class="callout callout-success"><p><strong>Expect a privacy question.</strong> The device records no audio and no images. The LM393 reports a loudness level, not sound; only counts, levels and the summary text leave the device, and only to your own Blynk account.</p></div>
+</section><section class="section" id="sources"><div class="section-label">References</div><h2>Sources</h2>
+<p>Blynk limits below were read from these pages on 22 Oct 2026; they change, so re-check your own Console.</p>
+<ul>
+<li><a href="https://docs.blynk.io/en/blynk.console/limits">Blynk docs: Limits</a> — Free plan: 50 datastreams and 5 events per template, 100,000 device messages a month, 100 logged events per device per day.</li>
+<li><a href="https://docs.blynk.io/en/message-usage.md">Blynk docs: Message Usage</a> — each <code>Blynk.virtualWrite</code> counts as one message.</li>
+<li><a href="https://www.blynk.io/pricing">Blynk pricing</a> — Free plan: 1 week of data retention, 100,000 messages.</li>
+<li><a href="https://docs.blynk.io/en/getting-started/events-tutorial">Blynk docs: Events tutorial</a> — <code>Blynk.logEvent()</code> usage; descriptions up to 300 characters.</li>
+<li><a href="https://docs.blynk.io/en/blynk.console/templates/events/events-notification-settings">Blynk docs: Notifications settings</a> — Limit Period and Event Counter behaviour.</li>
+<li><a href="https://docs.blynk.io/en/changelog">Blynk docs: Changelog</a> — recent Free plan limit changes.</li>
+<li><a href="https://community.blynk.cc/t/essential-changes-to-free-plan/65289?page=8">Blynk community: Essential changes to FREE plan</a> — staff reply that Online/Offline count toward the event limit (2023, may have changed).</li>
+<li><a href="https://community.blynk.cc/t/i-cant-add-widget-at-my-web-dashboard/66404">Blynk community: datastream limit on older Free accounts</a> — older Free accounts may be capped at 10 datastreams; check yours before adding V10-V15.</li>
+<li>Your 1.0 build log and the DeskPulse 2.0 enhancement proposal.</li>
+</ul></section>
+
+    <div class="footer">
+      <p>DeskPulse 2.0 — Enhanced IoT Productivity &amp; Ergonomics Monitor</p>
+      <p style="margin-top: 4px;">ESP32 DevKit V1 · SSD1306 OLED · Blynk IoT · October 2026</p>
+    </div>
+  </main>
+</div>
+
+<a href="#top" class="to-top" id="to-top" aria-label="Back to top">↑</a>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+  // Syntax highlighting (skipped silently when offline)
+  try { if (window.hljs) document.querySelectorAll('pre code:not(.nohighlight)').forEach(el => hljs.highlightElement(el)); } catch (e) {}
+
+  // Gate checklists, remembered in this browser
+  const KEY = 'deskpulse2-gates';
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+  const boxes = [...document.querySelectorAll('li.check input')];
+  const progText = document.getElementById('prog-text');
+  const progBar = document.getElementById('prog-bar');
+  function updateProgress() {
+    const done = boxes.filter(b => b.checked).length;
+    progText.textContent = done + ' of ' + boxes.length + ' gate checks done';
+    progBar.style.width = (boxes.length ? done / boxes.length * 100 : 0) + '%';
+  }
+  boxes.forEach(b => {
+    b.checked = !!saved[b.dataset.k];
+    b.addEventListener('change', () => {
+      saved[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  // Active section in the contents rail
+  const links = [...document.querySelectorAll('.toc a')];
+  const byId = Object.fromEntries(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const a = byId[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  document.querySelectorAll('section.section').forEach(s => obs.observe(s));
+
+  // Back-to-top button
+  const top = document.getElementById('to-top');
+  addEventListener('scroll', () => top.classList.toggle('show', scrollY > 800), { passive: true });
+</script>
+</body>
+</html>
