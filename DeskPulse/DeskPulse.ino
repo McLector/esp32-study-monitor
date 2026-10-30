@@ -1,5 +1,5 @@
-// DeskPulse 2.0 — phase 6: 1.0's behaviour on the new pin map and module layout.
-// No OLED yet (phase 7): a once-a-second status line on Serial stands in for it.
+// DeskPulse 2.0 — phase 7: 1.0's behaviour on the new pin map and module layout,
+// plus the OLED status screen. A once-a-second Serial line mirrors it for logging.
 #include "secrets.h"  // template defines must exist before the Blynk header
 #define BLYNK_PRINT Serial
 #include <WiFi.h>
@@ -11,6 +11,8 @@
 #include "sound.h"
 #include "buzzer.h"
 #include "env.h"
+#include "screen.h"
+#include "display.h"
 
 AppState app;
 BlynkTimer timer;
@@ -45,7 +47,11 @@ static void taskOutputs() {  // every 50 ms
   ledsUpdate();
 }
 
-static void taskStatus() {  // every 1 s: the OLED's job until phase 7
+static void taskDisplay() {  // every 500 ms
+  displayDraw(buildScreen(WiFi.status() == WL_CONNECTED, Blynk.connected()));
+}
+
+static void taskStatus() {  // every 1 s: Serial log line
   const Live& L = app.live;
   Serial.printf("[%-10s] IR=%d PIR=%d sit=%lu/%lu away=%lu D=%u skip=%u brk=%u T=%.1f H=%.0f peak=%u wifi=%d blynk=%d\n",
                 modeName(L.mode), digitalRead(PIN_IR), digitalRead(PIN_PIR),
@@ -69,6 +75,7 @@ static void registerTimers() {
   timer.setInterval(50L, taskOutputs);
   timer.setInterval(200L, taskPresence);
   timer.setInterval(250L, taskTick);
+  timer.setInterval(500L, taskDisplay);
   timer.setInterval(1000L, taskStatus);
   timer.setInterval(2500L, taskEnvironment);
   timer.setInterval(10000L, taskConnectivity);
@@ -81,6 +88,9 @@ void setup() {
   presenceInit();
   soundInit();
   envInit();
+  if (!displayInit())  // a dead or missing screen must not stop the device
+    Serial.printf("OLED not found at 0x%02X: running without the screen\n", OLED_ADDR);
+  displaySplash("Calibrating sound...");
 
   Serial.println("Calibrating sound: stay quiet for 2 s...");
   calibrateSound();

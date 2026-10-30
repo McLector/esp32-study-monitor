@@ -9,6 +9,7 @@ constexpr uint8_t PIN_IR = 18;        // direct: IR module runs on 3V3, no divid
 constexpr uint8_t PIN_PIR = 23;
 constexpr uint8_t PIN_DHT = 16;
 constexpr uint8_t PIN_SOUND_AO = 34;  // ADC1
+constexpr uint8_t OLED_ADDR = 0x3C;   // some modules use 0x3D
 
 // ---------- Feature flags ----------
 constexpr bool TEST_MODE = true;
