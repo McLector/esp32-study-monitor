@@ -50,7 +50,8 @@ void taskSound() {  // every 50 ms
 }
 
 bool checkDistraction(uint16_t p2p, uint32_t nowMs) {
-  if (!app.live.present) return false;
+  // Only a study block counts: not away, and not BREAK TIME even if still seated.
+  if (!app.live.present || app.live.mode != Mode::Studying) return false;
   if (p2p <= baseline + app.cfg.noiseMargin) return false;
   if (anyDistraction && nowMs - lastDistractionMs < DISTRACTION_COOLDOWN_S * 1000UL) return false;
   anyDistraction = true;

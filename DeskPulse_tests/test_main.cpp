@@ -314,6 +314,9 @@ static void test_reset_today_keeps_settings() {
 
 // ---------------------------------------------------------------- sound
 
+// Seated and in a study block: the only time noise counts as a distraction.
+static void studying() { app.live.present = true; app.live.mode = Mode::Studying; }
+
 static void test_no_distraction_while_away() {
   resetAll();
   soundSetBaseline(100);
@@ -324,7 +327,7 @@ static void test_no_distraction_while_away() {
 static void test_distraction_threshold() {
   resetAll();
   soundSetBaseline(100);
-  app.live.present = true;
+  studying();
   CHECK(!checkDistraction(100 + DEF_NOISE_MARGIN, 10000));
   CHECK(checkDistraction(100 + DEF_NOISE_MARGIN + 1, 10000));
   CHECK_EQ(app.day.distractions, 1);
@@ -335,7 +338,7 @@ static void test_distraction_threshold() {
 static void test_distraction_uses_live_margin() {
   resetAll();
   soundSetBaseline(100);
-  app.live.present = true;
+  studying();
   app.cfg.noiseMargin = 1000;
   CHECK(!checkDistraction(900, 10000));
   CHECK(checkDistraction(1101, 10000));
@@ -344,7 +347,7 @@ static void test_distraction_uses_live_margin() {
 static void test_distraction_cooldown() {
   resetAll();
   soundSetBaseline(100);
-  app.live.present = true;
+  studying();
   CHECK(checkDistraction(2000, 10000));
   CHECK(!checkDistraction(2000, 12999));
   CHECK(checkDistraction(2000, 13000));
@@ -354,7 +357,7 @@ static void test_distraction_cooldown() {
 static void test_first_distraction_at_time_zero() {
   resetAll();
   soundSetBaseline(100);
-  app.live.present = true;
+  studying();
   CHECK(checkDistraction(2000, 0));
 }
 
@@ -369,7 +372,7 @@ static void loudWindow() {  // one 50 ms window with a 4000 peak-to-peak swing
 static void test_own_beep_is_not_a_distraction() {
   resetAll();
   soundSetBaseline(100);
-  app.live.present = true;
+  studying();
   fake::now = 10000;
   buzzerPlay(Pattern::BreakAlert);
   buzzerUpdate();
@@ -387,10 +390,37 @@ static void test_own_beep_is_not_a_distraction() {
   CHECK_EQ(app.day.distractions, 1);
 }
 
+static void test_no_distraction_in_break_time() {
+  resetAll();
+  soundSetBaseline(100);
+  sit(26);  // BREAK TIME: the study block is over, even while still seated
+  CHECK(app.live.mode == Mode::BreakDue);
+  CHECK(!checkDistraction(4000, 10000));
+  leave(1);  // ON BREAK
+  CHECK(!checkDistraction(4000, 20000));
+  sit(1);    // back early: still BREAK TIME
+  CHECK(app.live.mode == Mode::BreakDue);
+  CHECK(!checkDistraction(4000, 30000));
+  CHECK_EQ(app.day.distractions, 0);
+  CHECK_EQ(app.ses.distractions, 0);
+  CHECK_EQ(countSignal(Signal::Distraction), 0);
+}
+
+static void test_distraction_counts_again_after_the_break() {
+  resetAll();
+  soundSetBaseline(100);
+  sit(26);
+  leave(5);  // break taken
+  sit(1);    // a new study block
+  CHECK(app.live.mode == Mode::Studying);
+  CHECK(checkDistraction(4000, 10000));
+  CHECK_EQ(app.ses.distractions, 1);
+}
+
 static void test_sound_window_resets() {
   resetAll();
   soundSetBaseline(100);
-  app.live.present = true;
+  studying();
   fake::now = 10000;
   loudWindow();
   CHECK_EQ(app.day.distractions, 1);
@@ -1285,6 +1315,34 @@ static void test_summary_gate_flow() {
   CHECK_STR(out, "You studied 35 min, took 1 break, had 0 distractions. Focus today: 85.");
 }
 
+static void test_summary_counts_this_sessions_distractions() {
+  resetAll();
+  soundSetBaseline(50);
+  app.cfg.noiseMargin = 100;  // a clap is anything above 150
+  sit(10);
+  CHECK(checkDistraction(400, 10000));
+  sit(5);
+  CHECK(checkDistraction(400, 20000));
+  leave(5);                              // a real break, before the alert
+  CHECK(!checkDistraction(400, 30000));  // away: not a distraction
+  sit(10);
+  CHECK(checkDistraction(400, 40000));
+  leave(10);  // session ends
+  CHECK_EQ(countSignal(Signal::SessionEnded), 1);
+  char out[SUMMARY_LEN];
+  CHECK(formatSummary(out, sizeof out, app.ses, app.live.focus));
+  // T = 25 min (30-min floor), 3 distractions = 6 / h: 100 - 24 = 76
+  CHECK_STR(out, "You studied 25 min, took 1 break, had 3 distractions. Focus today: 76.");
+
+  sit(10);  // next session starts from zero; the day keeps its total
+  leave(10);
+  CHECK_EQ(countSignal(Signal::SessionEnded), 2);
+  CHECK(formatSummary(out, sizeof out, app.ses, app.live.focus));
+  // T = 35 min, 3 distractions = 5.1 / h: 100 - 21 = 79
+  CHECK_STR(out, "You studied 10 min, took 0 breaks, had 0 distractions. Focus today: 79.");
+  CHECK_EQ(app.day.distractions, 3);
+}
+
 // ----------------------------------------------------------------
 
 int main() {
@@ -1350,6 +1408,8 @@ int main() {
     test_summary_skips_short_sessions,
     test_summary_worst_case_fits,
     test_summary_gate_flow,
+    test_summary_counts_this_sessions_distractions,
+    test_no_distraction_in_break_time, test_distraction_counts_again_after_the_break,
   };
   for (auto t : tests) t();
   printf("%d checks, %d failures, %zu tests\n", checks, failures, sizeof tests / sizeof *tests);
