@@ -1,1 +1,9 @@
+# Credentials: copy the matching *.example file and fill it in locally
 firmware/secrets.h
+DeskPulse/secrets.h
+
+# Host test build output
+DeskPulse_tests/build/
+
+# Local session notes
+HANDOFF.md
