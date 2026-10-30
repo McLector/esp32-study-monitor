@@ -229,3 +229,26 @@ and Blynk stayed connected throughout:
 
 The three ⚠️ items are cheap to check later on the board. Run them before
 the demo.
+
+### Dashboard: Sit Progress lagged behind the board
+
+- **Symptom:** after a session ended, the Sit Progress gauge (V8) stayed high
+  for a while before catching up.
+- **Cause:** V8 was only sent every 30 s, as the guide's message budget
+  planned. In `TEST_MODE` a whole session lasts 25 s, shorter than one
+  update, so the gauge always looked a cycle behind.
+- **Fix:** V8 is now also sent on every mode change. That's a few extra
+  messages an hour, so the budget is unchanged.
+- **Verified:** the board's serial log and the Blynk HTTP API (polled once a
+  second) were recorded side by side:
+
+| Board | Blynk | Delay |
+|---|---|---|
+| 06:02:16.1 BREAK TIME | V8 = 100 | 0.8 s |
+| 06:02:25.2 AWAY (break counted) | V8 = 0 | 0.4 s |
+
+While you're seated, V8 still updates every 30 s, which is smooth at real
+speed.
+
+**Blynk "Chart Copy" widget:** a 1.0 leftover linked to nothing. It's now
+"Daily Focus" (V15, bar chart), ready for phase 9.
