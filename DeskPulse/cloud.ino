@@ -63,7 +63,10 @@ void taskCloud() {  // every 30 s
 
 void cloudOnSignal(Signal s) {
   switch (s) {
-    case Signal::ModeChanged: pushInt(V7, app.live.present, cV7); break;
+    case Signal::ModeChanged:  // a few per hour: keep the dashboard in step at transitions
+      pushInt(V7, app.live.present, cV7);
+      pushInt(V8, sitProgress(), cV8);  // 100 % at Break due, 0 % once the break counts
+      break;
     case Signal::Distraction: pushInt(V1, app.day.distractions, cV1); break;
     case Signal::BreakDue:
       if (Blynk.connected())
