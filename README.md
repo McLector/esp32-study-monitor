@@ -12,15 +12,16 @@ enhancements on top of 1.0's behaviour:
 
 | # | Enhancement | Status |
 |---|---|---|
-| 1 | OLED status screen (0.96" SSD1306) | next: phase 7 |
-| 2 | Configurable Pomodoro + daily focus score | planned |
+| 1 | OLED status screen (0.96" SSD1306) | ✅ phase 7: working on the board |
+| 2 | Configurable Pomodoro + daily focus score | next: phases 8–9 |
 | 3 | 20-20-20 eye-rest reminders | planned |
 | 4 | Session summary notification | planned |
 
-**Progress:** phases 1 and 3–6 of 12 have passed on the real board. 1.0's
+**Progress:** phases 1 and 3–7 of 12 have passed on the real board. 1.0's
 behaviour is ported to the new modular firmware and passes all five
 regression tests: presence, break alert, break taken, distraction count, and
-mute. Phase 2's Wi-Fi works (the board stays connected to Blynk), but its NTP
+mute. The OLED status screen works through a full study, break and away
+cycle. Phase 2's Wi-Fi works (the board stays connected to Blynk), but its NTP
 clock check hasn't been run yet. It's needed before the daily-rollover
 features. See [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) for how each gate went.
 
@@ -93,6 +94,8 @@ sequencer and the mic sampler. There's no `delay()` in the main path.
 | `sound.*` | 2 s ambient baseline at boot, peak-to-peak detection, 3 s cooldown, ignores the buzzer's own beeps |
 | `buzzer.*` | Non-blocking beep patterns and the LED bar |
 | `env.*` | DHT11; keeps the last good reading on a failed read |
+| `screen.*` | What the OLED should show (status word, timers, bar, link state, burn-in dim/off). Pure logic, host-tested |
+| `display.*` | Draws a `screen` result on the SSD1306; keeps running if no OLED answers |
 | `config.h`, `state.h` | Pins, timings, feature flags, and the shared app state |
 
 The logic modules don't know Blynk exists. They raise signals (`ModeChanged`,
@@ -111,7 +114,7 @@ The logic modules compile for the PC against small fakes of `Arduino.h` and
 powershell -File DeskPulse_tests/run_tests.ps1
 ```
 
-This needs g++ on the PATH. Current result: 41 tests, 390 checks, 0 failures.
+This needs g++ on the PATH. Current result: 56 tests, 459 checks, 0 failures.
 
 ## Setup
 

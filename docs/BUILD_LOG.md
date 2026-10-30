@@ -14,7 +14,7 @@ something goes wrong.
 | 04 Outputs | LEDs chase 1→5; buzzer clicks | ✅ passed | 31 Oct 2026 |
 | 05 Inputs | IR 1 idle / 0 at 10 cm; PIR 0 at rest; clap spikes; DHT plausible | ✅ passed, after an IR wiring change | 31 Oct 2026 |
 | 06 Core firmware port | 1.0's five regression tests | ✅ passed | 31 Oct 2026 |
-| 07 OLED status screen | | next | |
+| 07 OLED status screen | Every state shows its screen; timers tick in real time | ✅ happy path on the board; 3 checks not run on hardware | 31 Oct 2026 |
 | 08–12 | | planned | |
 
 ---
@@ -173,3 +173,59 @@ Blynk dashboard.
 **Still to confirm by eye:**
 - the LEDs fill while studying and blink at BREAK TIME
 - exactly one push notification arrives per break
+
+## 31 Oct: phase 7, OLED status screen (Enhancement 1)
+
+**Design:** the screen is split in two, so the part that can be wrong is the
+part that gets tested.
+- **`screen.cpp` (pure logic, host-tested)** turns the app state into exactly
+  what the screen shows. That covers:
+  - the status word and the timer row
+  - the bar width
+  - the environment, distraction and focus text
+  - the link state, and burn-in dim/off
+- **`display.cpp` (ESP32 only)** just draws that with the Adafruit SSD1306
+  library. It checks that something answers at `0x3C` before calling
+  `begin()`, because the library's `begin()` doesn't check, and an unplugged
+  OLED would otherwise look like a working one.
+
+**Tests first.** 15 new host tests were written before the code, and they
+failed against an empty stub (44 failed checks). They cover:
+- every mode word, including OBJECT? (and that it only replaces AWAY)
+- "Left" reaching 00:00 on the exact tick the break alert starts, and never
+  going negative
+- the ON BREAK countdown ending on the tick the break is counted
+- `mm:ss` capped at 99:59, so a two-hour ignored alert still fits the
+  21-character row
+- a zero sit limit (no divide by zero)
+- a missing DHT reading, or half of one
+- D: up to 65535
+- "Focus --" before there's a score
+- Online / No cloud / Offline, including a stale cloud flag with Wi-Fi down
+- the eye-rest overlay
+- burn-in: dim when away, off after the session ends, awake on sit-down
+
+**Result:** 56 tests, 459 checks, 0 failures. The ESP32 build is 958,923
+bytes (73 %), with no warnings.
+
+**On the board:** three full cycles were recorded with no resets, and Wi-Fi
+and Blynk stayed connected throughout:
+```
+05:46:11.4 >> mode: STUDYING
+05:46:35.4 >> mode: BREAK TIME   (sit 25/25)
+05:46:40.4 >> mode: ON BREAK
+05:46:44.4 >> mode: AWAY         (break counted after 5 s)
+05:46:49.5 >> session ended      (screen off)
+05:47:09.4 >> mode: STUDYING     (screen wakes)
+```
+
+| Gate check | Status |
+|---|---|
+| Every mode shows its word | ✅ STUDYING, BREAK TIME, ON BREAK, AWAY on the board · ⚠️ OBJECT? host-tested only |
+| "Left" hits 00:00 as the LEDs fill and the alert starts | ✅ on the board, plus a host test |
+| ON BREAK countdown ends exactly when the break counts | ✅ on the board (4 s from ON BREAK to AWAY), plus a host test |
+| Wi-Fi off shows Offline; timers keep running | ⚠️ host-tested only, not run on hardware |
+| Boots with the OLED unplugged | ⚠️ not run yet (code path: probe fails, Serial warning, no-op draws) |
+
+The three ⚠️ items are cheap to check later on the board. Run them before
+the demo.
