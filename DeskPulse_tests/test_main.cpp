@@ -8,6 +8,7 @@
 #include "sound.h"
 #include "buzzer.h"
 #include "env.h"
+#include "screen.h"
 
 AppState app;
 static std::vector<Signal> signals;
@@ -24,6 +25,12 @@ static int failures = 0, checks = 0;
     ++checks;                                                           \
     long long _a = (long long)(a), _b = (long long)(b);                 \
     if (_a != _b) { ++failures; printf("  FAIL %s:%d  %s == %s  (%lld vs %lld)\n", __FILE__, __LINE__, #a, #b, _a, _b); } \
+  } while (0)
+#define CHECK_STR(a, b)                                                 \
+  do {                                                                  \
+    ++checks;                                                           \
+    const char *_a = (a), *_b = (b);                                    \
+    if (strcmp(_a, _b) != 0) { ++failures; printf("  FAIL %s:%d  %s == \"%s\"  (got \"%s\")\n", __FILE__, __LINE__, #a, _b, _a); } \
   } while (0)
 
 static void resetAll() {
@@ -531,6 +538,176 @@ static void test_env_task_reads_sensor() {
   CHECK(app.live.humidity == 70.0f);
 }
 
+// ---------------------------------------------------------------- screen (phase 7)
+
+static Screen screenNow(bool wifi = true, bool cloud = true) { return buildScreen(wifi, cloud); }
+
+static void test_screen_mode_words() {
+  resetAll();
+  CHECK_STR(screenNow().title, "AWAY");
+  app.live.objectSuspected = true;
+  CHECK_STR(screenNow().title, "OBJECT?");
+  app.live.mode = Mode::Studying;  // the guard word only replaces AWAY
+  CHECK_STR(screenNow().title, "STUDYING");
+  app.live.mode = Mode::BreakDue;
+  CHECK_STR(screenNow().title, "BREAK TIME");
+  app.live.mode = Mode::OnBreak;
+  CHECK_STR(screenNow().title, "ON BREAK");
+}
+
+static void test_screen_sit_and_left_timers() {
+  resetAll();
+  CHECK_STR(screenNow().timers, "Sit 00:00  Left 00:25");
+  sit(12);
+  CHECK_STR(screenNow().timers, "Sit 00:12  Left 00:13");
+}
+
+static void test_screen_left_hits_zero_as_alert_starts() {
+  resetAll();
+  sit(24);
+  CHECK_STR(screenNow().timers, "Sit 00:24  Left 00:01");
+  CHECK(app.live.mode == Mode::Studying);
+  sit(1);  // the tick that reaches the limit
+  CHECK(app.live.mode == Mode::BreakDue);
+  CHECK_STR(screenNow().timers, "Sit 00:25  Left 00:00");
+  CHECK_EQ(screenNow().barPx, SCREEN_BAR_MAX_PX);
+}
+
+static void test_screen_left_never_underflows() {
+  resetAll();
+  sit(40);  // well past the limit, still seated
+  CHECK_STR(screenNow().timers, "Sit 00:40  Left 00:00");
+  CHECK_EQ(screenNow().barPx, SCREEN_BAR_MAX_PX);
+}
+
+static void test_screen_on_break_countdown_ends_when_break_counts() {
+  resetAll();
+  sit(10);
+  leave(1);
+  CHECK(app.live.mode == Mode::OnBreak);
+  CHECK_STR(screenNow().timers, "Break counts in 00:04");
+  leave(3);
+  CHECK_STR(screenNow().timers, "Break counts in 00:01");
+  CHECK(app.live.mode == Mode::OnBreak);
+  leave(1);  // countdown would hit 00:00 here: the break is counted instead
+  CHECK(app.live.mode == Mode::Away);
+  CHECK_EQ(app.day.breaksTaken, 1);
+}
+
+static void test_screen_countdown_never_underflows() {
+  resetAll();
+  app.live.mode = Mode::OnBreak;
+  app.live.awaySec = 99;  // past the break length
+  CHECK_STR(screenNow().timers, "Break counts in 00:00");
+}
+
+static void test_mmss_formats_and_caps() {
+  char b[8];
+  formatMmss(b, sizeof b, 0);     CHECK_STR(b, "00:00");
+  formatMmss(b, sizeof b, 59);    CHECK_STR(b, "00:59");
+  formatMmss(b, sizeof b, 60);    CHECK_STR(b, "01:00");
+  formatMmss(b, sizeof b, 3599);  CHECK_STR(b, "59:59");
+  formatMmss(b, sizeof b, 5999);  CHECK_STR(b, "99:59");
+  formatMmss(b, sizeof b, 6000);  CHECK_STR(b, "99:59");      // capped, not "100:00"
+  formatMmss(b, sizeof b, 0xFFFFFFFFu); CHECK_STR(b, "99:59");
+  char tiny[3];
+  formatMmss(tiny, sizeof tiny, 75);  // too-small buffer: truncated, still terminated
+  CHECK_EQ(strlen(tiny), 2);
+}
+
+static void test_screen_long_sit_fits_the_row() {
+  resetAll();
+  app.live.mode = Mode::BreakDue;
+  app.live.sitSec = 2 * 3600;  // ignored the alert for two hours
+  CHECK_STR(screenNow().timers, "Sit 99:59  Left 00:00");
+  CHECK(strlen(screenNow().timers) <= 21);
+}
+
+static void test_screen_bar_scales_and_handles_zero_limit() {
+  resetAll();
+  CHECK_EQ(screenNow().barPx, 0);
+  app.live.sitSec = 12;  // 12/25 of 126 px
+  CHECK_EQ(screenNow().barPx, 126 * 12 / 25);
+  app.cfg.sitLimitMin = 0;  // corrupt setting must not divide by zero
+  CHECK_EQ(screenNow().barPx, SCREEN_BAR_MAX_PX);
+  CHECK_STR(screenNow().timers, "Sit 00:12  Left 00:00");
+}
+
+static void test_screen_env_and_missing_reading() {
+  resetAll();
+  CHECK_STR(screenNow().env, "--.-C --%RH");  // no DHT reading yet
+  app.live.tempC = 28.46f;
+  app.live.humidity = 65.4f;
+  CHECK_STR(screenNow().env, "28.5C 65%RH");
+  app.live.humidity = NAN;  // half a reading still counts as missing
+  CHECK_STR(screenNow().env, "--.-C --%RH");
+}
+
+static void test_screen_distractions_and_focus() {
+  resetAll();
+  CHECK_STR(screenNow().dist, "D:0");
+  app.day.distractions = 65535;
+  CHECK_STR(screenNow().dist, "D:65535");
+  CHECK_STR(screenNow().focus, "Focus --");  // -1 = not enough data
+  app.live.focus = 0;
+  CHECK_STR(screenNow().focus, "Focus 0");
+  app.live.focus = 100;
+  CHECK_STR(screenNow().focus, "Focus 100");
+}
+
+static void test_screen_link_states() {
+  resetAll();
+  CHECK_STR(screenNow(true, true).link, "Online");
+  CHECK_STR(screenNow(true, false).link, "No cloud");
+  CHECK_STR(screenNow(false, false).link, "Offline");
+  CHECK_STR(screenNow(false, true).link, "Offline");  // stale cloud flag without Wi-Fi
+}
+
+static void test_screen_eye_rest_overlay() {
+  resetAll();
+  CHECK(!screenNow().eyeRest);
+  app.live.mode = Mode::Studying;
+  app.live.eyeRestLeft = 20;
+  Screen s = screenNow();
+  CHECK(s.eyeRest);
+  CHECK_EQ(s.eyeLeft, 20);
+}
+
+static void test_screen_burn_in_dim_and_off() {
+  resetAll();
+  CHECK(screenNow().off);  // boot: away, no session yet
+  sit(3);
+  Screen s = screenNow();
+  CHECK(!s.dim);
+  CHECK(!s.off);
+  leave(1);  // on break: still a live screen
+  CHECK(!screenNow().dim);
+  leave(4);  // break counted: away, session still active
+  CHECK(app.live.mode == Mode::Away);
+  s = screenNow();
+  CHECK(s.dim);
+  CHECK(!s.off);
+  leave(10);  // session ended
+  CHECK(!app.ses.active);
+  CHECK(screenNow().off);
+  sit(1);  // wakes as soon as you sit down
+  s = screenNow();
+  CHECK(!s.off);
+  CHECK(!s.dim);
+}
+
+static void test_screen_rows_fit_their_width() {
+  resetAll();
+  const Mode modes[] = {Mode::Away, Mode::Studying, Mode::BreakDue, Mode::OnBreak};
+  for (Mode m : modes) {
+    app.live.mode = m;
+    app.live.objectSuspected = m == Mode::Away;
+    Screen s = screenNow();
+    CHECK(strlen(s.title) <= 10);
+    CHECK(strlen(s.timers) <= 21);
+  }
+}
+
 // ----------------------------------------------------------------
 
 int main() {
@@ -556,6 +733,14 @@ int main() {
     test_led_mask_progress, test_led_mask_blinks_in_break_due,
     test_leds_update_writes_pins, test_env_keeps_last_good_reading,
     test_env_task_reads_sensor,
+    test_screen_mode_words, test_screen_sit_and_left_timers,
+    test_screen_left_hits_zero_as_alert_starts, test_screen_left_never_underflows,
+    test_screen_on_break_countdown_ends_when_break_counts,
+    test_screen_countdown_never_underflows, test_mmss_formats_and_caps,
+    test_screen_long_sit_fits_the_row, test_screen_bar_scales_and_handles_zero_limit,
+    test_screen_env_and_missing_reading, test_screen_distractions_and_focus,
+    test_screen_link_states, test_screen_eye_rest_overlay,
+    test_screen_burn_in_dim_and_off, test_screen_rows_fit_their_width,
   };
   for (auto t : tests) t();
   printf("%d checks, %d failures, %zu tests\n", checks, failures, sizeof tests / sizeof *tests);

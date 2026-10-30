@@ -4,7 +4,7 @@ $src = Join-Path $here '..\DeskPulse'
 $out = Join-Path $here 'build'
 New-Item -ItemType Directory -Force $out | Out-Null
 
-$sources = @('session.cpp', 'presence.cpp', 'sound.cpp', 'buzzer.cpp', 'env.cpp') |
+$sources = @('session.cpp', 'presence.cpp', 'sound.cpp', 'buzzer.cpp', 'env.cpp', 'screen.cpp') |
   ForEach-Object { Join-Path $src $_ }
 
 g++ -std=gnu++17 -Wall -Wextra -I (Join-Path $here 'shim') -I $src `
