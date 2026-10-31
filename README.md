@@ -13,17 +13,19 @@ enhancements on top of 1.0's behaviour:
 | # | Enhancement | Status |
 |---|---|---|
 | 1 | OLED status screen (0.96" SSD1306) | ✅ phase 7: working on the board |
-| 2 | Configurable Pomodoro + daily focus score | next: phases 8–9 |
-| 3 | 20-20-20 eye-rest reminders | planned |
-| 4 | Session summary notification | planned |
+| 2 | Configurable Pomodoro + daily focus score | ✅ phases 8–9: working on the board |
+| 3 | 20-20-20 eye-rest reminders | ✅ phase 10: working on the board |
+| 4 | Session summary notification | ✅ phase 11: working on the board |
 
-**Progress:** phases 1 and 3–7 of 12 have passed on the real board. 1.0's
-behaviour is ported to the new modular firmware and passes all five
-regression tests: presence, break alert, break taken, distraction count, and
-mute. The OLED status screen works through a full study, break and away
-cycle. Phase 2's Wi-Fi works (the board stays connected to Blynk), but its NTP
-clock check hasn't been run yet. It's needed before the daily-rollover
-features. See [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) for how each gate went.
+**Progress:** phases 1–11 of 12 work on the real board along their normal
+path. 1.0's behaviour is ported to the new modular firmware and passes all
+five regression tests: presence, break alert, break taken, distraction count,
+and mute. The four enhancements were tested on the board in `TEST_MODE`:
+sliders, focus score, eye-rest and session summaries, and the summaries
+matched the serial log every time. NTP time is correct. Not run on the board:
+the power-cycle-without-Wi-Fi, offline and object-guard checks (unit-tested
+only), and phase 12's real-time hour. The logic has 103 host unit tests. See
+[`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) for how each gate went.
 
 **Hardware:** ESP32 (WROOM-32) · SSD1306 OLED · IR obstacle sensor · PIR
 motion sensor · LM393 sound sensor · DHT11 · 5-LED bar · active buzzer

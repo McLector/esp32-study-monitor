@@ -15,11 +15,11 @@ something goes wrong.
 | 05 Inputs | IR 1 idle / 0 at 10 cm; PIR 0 at rest; clap spikes; DHT plausible | ✅ passed, after an IR wiring change | 31 Oct 2026 |
 | 06 Core firmware port | 1.0's five regression tests | ✅ passed | 31 Oct 2026 |
 | 07 OLED status screen | Every state shows its screen; timers tick in real time | ✅ happy path on the board; 3 checks not run on hardware | 31 Oct 2026 |
-| 08 Configurable Pomodoro | Slider changes take effect at once and survive a reboot | 🟡 built and host-tested; counters survive reboots on the board; slider checks not run yet | 31 Oct 2026 |
-| 09 Focus score + rollover | The five score rows reproduce; counters survive a power cycle | 🟡 built and host-tested; NTP time correct on the board | 31 Oct 2026 |
-| 10 Eye-rest | Overlay at 20 s with a 25 limit, never with 20 | 🟡 built and host-tested; not run on the board yet | 31 Oct 2026 |
-| 11 Session summary | Exactly one summary per session, "1 break" | 🟡 built and host-tested; not run on the board yet | 31 Oct 2026 |
-| 12 | | planned | |
+| 08 Configurable Pomodoro | Slider changes take effect at once and survive a reboot | ✅ both sliders apply within 1 s; counters survive resets. Power cycle without Wi-Fi: out of scope, unit-tested | 31 Oct 2026 |
+| 09 Focus score + rollover | The five score rows reproduce; counters survive a power cycle | ✅ rows reproduce (unit tests); live score matches hand calculation; midnight rollover unit-tested only | 31 Oct 2026 |
+| 10 Eye-rest | Overlay at 20 s with a 25 limit, never with 20 | ✅ both, on the board | 31 Oct 2026 |
+| 11 Session summary | Exactly one summary per session, "1 break" | ✅ 13 summaries, all correct, incl. 1 and 2 breaks | 31 Oct 2026 |
+| 12 Integration and budget | Full test plan; ≤ 500 messages in a real hour | ⏳ happy-path tests done; real-time hour not run | — |
 
 ---
 
@@ -320,3 +320,32 @@ waits and is sent on reconnect.
 **Still to run on the board:** the slider and power-cycle checks (with Wi-Fi
 off), the eye-rest overlay at 20 s, the summary push, and the earlier
 by-eye checks.
+
+## 31 Oct: phases 8–11 on the board
+
+These checks were run in `TEST_MODE` (1 app minute = 1 s) with a timestamped
+serial log and the Blynk dashboard.
+
+**A rule change from testing.** Claps made while still seated during BREAK
+TIME were counted as distractions. Once the alert fires, the study block is
+over, so distractions now count only in STUDYING (`c832a43`).
+
+| Check | Evidence | Result |
+|---|---|---|
+| V11 changed mid-session | `>> sit limit 60 min` at 06:35:47; status `sit=0/60` the next second; BREAK TIME at 60; saved 52 s later | ✅ |
+| V12 changed mid-session | `>> break length 8 min` at 07:39:01; countdown `/8` within 1 s; break counted after 8 s | ✅ |
+| Sit limit 20 | BREAK TIME at 20/20, no eye-rest before it | ✅ |
+| Early return during BREAK TIME | Left at sit 28, back after 2 s: BREAK TIME again, sit kept | ✅ |
+| Skipped break | `skip` +1 once per cycle; focus fell 91 → 76 (exactly 15) | ✅ |
+| Eye-rest | Fired at sit 20 all 13 times; never in BREAK TIME or in a 19 s sitting | ✅ |
+| Session summary | 13 summaries, every figure matched the log; e.g. "You studied 67 min, took 1 break, had 2 distractions. Focus today: 78." | ✅ |
+| V9 Reset | Counters to 0 and saved | ✅ |
+
+**Blynk events were capped at one per hour.** All three events had a Limit
+Period of once per hour, so every break reminder after the first in an hour
+was being dropped. That's probably why "exactly one notification per break"
+could never be confirmed. It's now once per second.
+
+**Out of scope for hardware testing** (unit-tested only): settings surviving
+a power cycle with Wi-Fi off, the Offline screen, and the OBJECT? guard. Phase
+12's real-time message-budget hour has not been run.
