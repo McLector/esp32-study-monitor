@@ -9,13 +9,17 @@ something goes wrong.
 | Phase | Gate | Result | Date |
 |---|---|---|---|
 | 01 Toolchain and template | Every library compiles | ✅ passed | Oct 2026 |
-| 02 Bare ESP32 | Correct Manila time within 10 s | ⏳ Wi-Fi confirmed; NTP check not run yet | — |
+| 02 Bare ESP32 | Correct Manila time within 10 s | ✅ NTP time matched the PC clock (in the phase 9 firmware) | 31 Oct 2026 |
 | 03 I2C bus and OLED | Scanner finds `0x3C`; text readable | ✅ passed | 31 Oct 2026 |
 | 04 Outputs | LEDs chase 1→5; buzzer clicks | ✅ passed | 31 Oct 2026 |
 | 05 Inputs | IR 1 idle / 0 at 10 cm; PIR 0 at rest; clap spikes; DHT plausible | ✅ passed, after an IR wiring change | 31 Oct 2026 |
 | 06 Core firmware port | 1.0's five regression tests | ✅ passed | 31 Oct 2026 |
 | 07 OLED status screen | Every state shows its screen; timers tick in real time | ✅ happy path on the board; 3 checks not run on hardware | 31 Oct 2026 |
-| 08–12 | | planned | |
+| 08 Configurable Pomodoro | Slider changes take effect at once and survive a reboot | 🟡 built and host-tested; counters survive reboots on the board; slider checks not run yet | 31 Oct 2026 |
+| 09 Focus score + rollover | The five score rows reproduce; counters survive a power cycle | 🟡 built and host-tested; NTP time correct on the board | 31 Oct 2026 |
+| 10 Eye-rest | Overlay at 20 s with a 25 limit, never with 20 | 🟡 built and host-tested; not run on the board yet | 31 Oct 2026 |
+| 11 Session summary | Exactly one summary per session, "1 break" | 🟡 built and host-tested; not run on the board yet | 31 Oct 2026 |
+| 12 | | planned | |
 
 ---
 
@@ -252,3 +256,67 @@ speed.
 
 **Blynk "Chart Copy" widget:** a 1.0 leftover linked to nothing. It's now
 "Daily Focus" (V15, bar chart), ready for phase 9.
+
+## 31 Oct: phases 8–11 built (Enhancements 2–4)
+
+**Tests first, as before.** Each phase's tests were written against empty
+stubs and failed first: 64 failing checks for phase 8, then 50 for phases
+9–11. All of them pass now: **97 tests, 659 checks, 0 failures**, no compiler
+warnings. The ESP32 build is 996,457 bytes (76 %).
+
+**Phase 8: configurable Pomodoro.** V11 (sit limit) and V12 (break length) are
+set from Blynk sliders. They're saved in NVS along with mute, sensitivity, the
+eye-rest switch and today's counters. A fake `Preferences.h` lets the real
+`storage.cpp` run in the host tests. The tests cover:
+- out-of-range values clamped *before* narrowing to a byte (300 would
+  otherwise become 44)
+- a corrupt saved sit limit of 0 or 255 clamped on load
+- a wrong-size saved copy rejected
+- TEST_MODE counters never loading into the real build
+- no flash writes when the dashboard re-sends the same values on every
+  reconnect
+- a failed write retried 60 s later
+
+**A state machine change.** Raising the sit limit during BREAK TIME used to
+leave the alert beeping while the screen showed time left. Now it goes back
+to STUDYING and warns again at the new limit. A skip that was already counted
+stays counted. Whether a break was "on time" is judged from when the alert
+fired, so changing the limit mid-break can't flip it.
+
+**Phase 9: focus score and daily rollover.** The guide's formula and its five
+example rows are host tests. NTP gives Manila time. At midnight the final
+score goes to V15 and today's counters reset. V10 sends the score every 60 s.
+In TEST_MODE you can type `t=120 d=6 s=1` into the Serial Monitor to check a
+score by hand.
+
+**Phase 10: eye-rest.** The guide's rules are implemented: three light
+chirps (silent when muted), one LED sweep, the OLED overlay and the `eye_rest`
+event. V13 turns it off.
+
+**Phase 11: session summary.** When a session ends, the board sends one
+`session_summary` event. The final departure is not counted as a break.
+Sessions under 5 study minutes send nothing. If Blynk is offline, the summary
+waits and is sent on reconnect.
+
+### Crash at first boot: NTP vs Blynk DNS
+
+- **Symptom:** the first boot after uploading the phase 9 build crashed with
+  `assert failed: udp_new_ip_type ... Required to lock TCPIP core
+  functionality`, then rebooted fine.
+- **Diagnosis:** the backtrace, decoded with `addr2line`, showed:
+  1. Blynk's connect calls `NetworkManager::hostByName()` (ESP32 core 3.3.11).
+  2. When the IP state changes, that function clears the DNS cache **without
+     taking the lwIP lock**.
+  3. Clearing the cache fired the NTP client's lookup of `pool.ntp.org`,
+     which was still waiting.
+  4. That callback opened a UDP socket unlocked, so lwIP asserted.
+- **Risk:** this would happen at random, at boot or after any Wi-Fi reconnect.
+- **Fix:** NTP is given Google Public NTP's literal IPs, so it never has a
+  DNS lookup waiting.
+- **Verified:** uploaded and then booted 4 times. 0 crashes; Blynk connected
+  and NTP set the time on every boot. Today's counters
+  (`D=7 skip=3 brk=6`, focus 46) came back after every reset.
+
+**Still to run on the board:** the slider and power-cycle checks (with Wi-Fi
+off), the eye-rest overlay at 20 s, the summary push, and the earlier
+by-eye checks.
