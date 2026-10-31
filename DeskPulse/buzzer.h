@@ -14,4 +14,7 @@ void alertUpdate();
 
 // Bit i = LED i lit (bit 0 blue … bit 4 red).
 uint8_t ledMask(Mode m, uint32_t sitSec, uint32_t limitSec, uint32_t nowMs);
+constexpr uint16_t LED_SWEEP_STEP_MS = 80;  // eye-rest sweep: blue to red, one LED per step
+uint8_t sweepMask(uint32_t elapsedMs);    // the sweep's LED at this point, 0 once done
+void ledSweep();                          // start one sweep; it overrides the normal LEDs
 void ledsUpdate();               // writes ledMask() for the current state to the pins

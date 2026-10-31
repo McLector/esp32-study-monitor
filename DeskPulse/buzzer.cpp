@@ -78,7 +78,25 @@ uint8_t ledMask(Mode m, uint32_t sitSec, uint32_t limitSec, uint32_t nowMs) {
   }
 }
 
+uint8_t sweepMask(uint32_t elapsedMs) {
+  const uint32_t step = elapsedMs / LED_SWEEP_STEP_MS;
+  return step < 5 ? (uint8_t)(1u << step) : 0;
+}
+
+static bool sweeping = false;
+static uint32_t sweepStartMs = 0;
+
+void ledSweep() {
+  sweeping = true;
+  sweepStartMs = millis();
+}
+
 void ledsUpdate() {
-  const uint8_t mask = ledMask(app.live.mode, app.live.sitSec, sitLimitSec(), millis());
+  const uint32_t now = millis();
+  uint8_t mask = sweeping ? sweepMask(now - sweepStartMs) : 0;
+  if (!mask) {
+    sweeping = false;
+    mask = ledMask(app.live.mode, app.live.sitSec, sitLimitSec(), now);
+  }
   for (uint8_t i = 0; i < 5; i++) digitalWrite(PIN_LEDS[i], (mask >> i) & 1 ? HIGH : LOW);
 }
