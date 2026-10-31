@@ -1,5 +1,6 @@
 // Host-side tests for DeskPulse's logic modules. Build and run with run_tests.ps1.
 // Assumes config.h has TEST_MODE = true (1 app minute = 1 s) and the 25/5 defaults.
+#include <string>
 #include <vector>
 #include <DHT.h>  // the shim's fake sensor
 #include <Preferences.h>  // the shim's in-memory NVS
@@ -1343,6 +1344,44 @@ static void test_summary_counts_this_sessions_distractions() {
   CHECK_EQ(app.day.distractions, 3);
 }
 
+// ---------------------------------------------------------------- review fixes
+
+static void test_short_session_keeps_a_waiting_summary() {
+  char pending[SUMMARY_LEN] = "";
+  CHECK(queueSummary(pending, sizeof pending, sessionOf(50, 2, 3), 80));  // offline: waits here
+  const std::string waiting = pending;
+  CHECK(!queueSummary(pending, sizeof pending, sessionOf(MIN_SUMMARY_MIN - 1, 1, 0), 80));
+  CHECK_STR(pending, waiting.c_str());  // a pen-grab session must not erase it
+  CHECK(queueSummary(pending, sizeof pending, sessionOf(30, 1, 0), 80));  // a real one replaces it
+  CHECK_STR(pending, "You studied 30 min, took 0 breaks, had 0 distractions. Focus today: 80.");
+}
+
+static void test_reset_and_new_day_clear_the_focus_score() {
+  resetAll();
+  sit(30);
+  CHECK(app.live.focus >= 0);
+  resetToday();  // V9: pushAll() runs right after, so the stale score must already be gone
+  CHECK_EQ(app.live.focus, -1);
+  sit(30);
+  app.day.ymd = 20261031;
+  CHECK(app.live.focus >= 0);
+  dayRollover(20261101);
+  CHECK_EQ(app.live.focus, -1);
+}
+
+static void test_return_to_a_newly_due_break_raises_the_event() {
+  resetAll();
+  cfgSetSitLimit(50);
+  sit(30);
+  leave(2);
+  cfgSetSitLimit(25);  // lowered while away: the break is now due
+  sit(1);
+  CHECK(app.live.mode == Mode::BreakDue);
+  CHECK_EQ(countSignal(Signal::BreakDue), 1);  // break_time push for this cycle
+  sit(3);
+  CHECK_EQ(countSignal(Signal::BreakDue), 1);
+}
+
 // ----------------------------------------------------------------
 
 int main() {
@@ -1410,6 +1449,9 @@ int main() {
     test_summary_gate_flow,
     test_summary_counts_this_sessions_distractions,
     test_no_distraction_in_break_time, test_distraction_counts_again_after_the_break,
+    test_short_session_keeps_a_waiting_summary,
+    test_reset_and_new_day_clear_the_focus_score,
+    test_return_to_a_newly_due_break_raises_the_event,
   };
   for (auto t : tests) t();
   printf("%d checks, %d failures, %zu tests\n", checks, failures, sizeof tests / sizeof *tests);

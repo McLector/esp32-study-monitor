@@ -100,7 +100,7 @@ void cloudOnSignal(Signal s) {
         Blynk.logEvent("eye_rest", "Look at something 20 ft (6 m) away for 20 seconds");
       break;
     case Signal::SessionEnded:
-      if (formatSummary(pendingSummary, sizeof pendingSummary, app.ses, app.live.focus)) {
+      if (queueSummary(pendingSummary, sizeof pendingSummary, app.ses, app.live.focus)) {
         Serial.printf(">> summary: %s\n", pendingSummary);
         flushSummary();
       }

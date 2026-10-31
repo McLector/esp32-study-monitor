@@ -14,3 +14,10 @@ bool formatSummary(char* out, size_t n, const Session& s, int8_t focus) {
            (unsigned long)mins, breaks, breaks == 1 ? "" : "s", dist, dist == 1 ? "" : "s", score);
   return true;
 }
+
+bool queueSummary(char* pending, size_t n, const Session& s, int8_t focus) {
+  char tmp[SUMMARY_LEN];
+  if (!formatSummary(tmp, sizeof tmp, s, focus)) return false;
+  snprintf(pending, n, "%s", tmp);
+  return true;
+}

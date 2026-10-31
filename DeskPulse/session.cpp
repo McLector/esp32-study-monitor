@@ -36,8 +36,12 @@ void sessionTick() {
   if (L.present) {
     L.awaySec = 0;
     if (!app.ses.active) { app.ses = Session{}; app.ses.active = true; }
-    if (L.mode == Mode::Away || L.mode == Mode::OnBreak)  // back at the desk
-      setMode(L.sitSec >= sitLimitSec() ? Mode::BreakDue : Mode::Studying);
+    if (L.mode == Mode::Away || L.mode == Mode::OnBreak) {  // back at the desk
+      const bool due = L.sitSec >= sitLimitSec();
+      setMode(due ? Mode::BreakDue : Mode::Studying);
+      // Limit lowered while away: this cycle's alert hasn't fired yet, so announce it.
+      if (due && L.dueSec == 0) onSignal(Signal::BreakDue);
+    }
     L.sitSec++; app.day.studySec++; app.ses.studySec++;
     tickEyeRest();  // Enhancement 3
     // Sit limit raised past the sit time (V11): the alert no longer applies.
@@ -105,6 +109,7 @@ bool dayRollover(uint32_t ymd) {
   onSignal(Signal::DayRolled);                               // final score goes to V15
   app.day = Daily{};
   app.day.ymd = ymd;
+  app.live.focus = computeFocus(app.day);
   return true;
 }
 
@@ -115,4 +120,5 @@ void resetToday() {
   const bool active = app.ses.active;
   app.ses = Session{};
   app.ses.active = active;
+  app.live.focus = computeFocus(app.day);  // pushAll() follows: don't resend the old score
 }

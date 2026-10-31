@@ -101,7 +101,7 @@ static void serialTestHook() {
   if (!TEST_MODE || !Serial.available()) return;
   String line = Serial.readStringUntil('\n');
   int t, d, s;
-  if (sscanf(line.c_str(), "t=%d d=%d s=%d", &t, &d, &s) == 3) {
+  if (sscanf(line.c_str(), "t=%d d=%d s=%d", &t, &d, &s) == 3 && t >= 0 && d >= 0 && s >= 0) {
     app.day.studySec = t * MIN_S;
     app.day.distractions = d;
     app.day.breaksSkipped = s;
@@ -134,6 +134,7 @@ static void registerTimers() {
 
 void setup() {
   Serial.begin(115200);
+  Serial.setTimeout(50);  // the TEST_MODE serial hook must never stall loop() for long
   const Restored nvs = storageLoad();  // before anything reads app.cfg
   Serial.printf("NVS: settings %s (sit %u / break %u min), counters %s (study %lus D=%u skip=%u brk=%u)\n",
                 nvs.settings ? "loaded" : "defaults", app.cfg.sitLimitMin, app.cfg.breakMin,
