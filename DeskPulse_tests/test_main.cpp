@@ -1111,6 +1111,44 @@ static void test_focus_updates_every_tick() {
   CHECK_STR(screenNow().focus, "Focus 100");
 }
 
+// V10 is a 0-100 gauge with no blank state: "no score" must clear the old number.
+static void test_focus_gauge_value_range() {
+  CHECK_EQ(focusGaugeValue(-1), 0);
+  CHECK_EQ(focusGaugeValue(-128), 0);  // anything negative is "no score"
+  CHECK_EQ(focusGaugeValue(0), 0);
+  CHECK_EQ(focusGaugeValue(1), 1);
+  CHECK_EQ(focusGaugeValue(85), 85);
+  CHECK_EQ(focusGaugeValue(100), 100);
+}
+
+static void test_focus_gauge_clears_after_reset() {
+  resetAll();
+  sit(10);
+  CHECK_EQ(focusGaugeValue(app.live.focus), 100);
+  resetToday();
+  CHECK_EQ(app.live.focus, -1);
+  CHECK_EQ(focusGaugeValue(app.live.focus), 0);
+}
+
+static void test_focus_gauge_clears_on_new_day() {
+  resetAll();
+  app.day.ymd = 20261031;
+  sit(10);
+  CHECK_EQ(focusGaugeValue(app.live.focus), 100);
+  CHECK(dayRollover(20261101));
+  CHECK_EQ(focusGaugeValue(app.live.focus), 0);
+}
+
+static void test_focus_gauge_returns_with_the_score() {
+  resetAll();
+  sit(10);
+  resetToday();
+  sit(9);
+  CHECK_EQ(focusGaugeValue(app.live.focus), 0);  // under 10 min again: still no score
+  sit(1);
+  CHECK_EQ(focusGaugeValue(app.live.focus), 100);
+}
+
 static void test_rollover_first_sync_adopts_the_date() {
   resetAll();
   app.day.studySec = 600;  // restored from flash, date unknown
@@ -1430,6 +1468,8 @@ int main() {
     test_focus_score_guide_rows,
     test_focus_edges_and_caps,
     test_focus_updates_every_tick,
+    test_focus_gauge_value_range, test_focus_gauge_clears_after_reset,
+    test_focus_gauge_clears_on_new_day, test_focus_gauge_returns_with_the_score,
     test_rollover_first_sync_adopts_the_date,
     test_rollover_same_day_keeps_counters,
     test_rollover_new_day_signals_then_resets,

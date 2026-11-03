@@ -43,9 +43,7 @@ static void pushNoisePeak() {  // the window's maximum, then start a new window
   app.live.noisePeak = 0;
 }
 
-static void pushFocus() {  // nothing until there is a score
-  if (app.live.focus >= 0) pushInt(V10, app.live.focus, cV10);
-}
+static void pushFocus() { pushInt(V10, focusGaugeValue(app.live.focus), cV10); }
 
 static void pushStatus() {
   if (Blynk.connected()) Blynk.virtualWrite(V14, modeName(app.live.mode));

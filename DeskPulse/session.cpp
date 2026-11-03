@@ -102,6 +102,8 @@ int8_t computeFocus(const Daily& d) {
   return (int8_t)(score < 0 ? 0 : score);
 }
 
+uint8_t focusGaugeValue(int8_t focus) { return focus < 0 ? 0 : focus; }
+
 bool dayRollover(uint32_t ymd) {
   if (ymd == 0) return false;                                // no NTP time yet
   if (app.day.ymd == 0) { app.day.ymd = ymd; return false; } // first sync: adopt (also restored counters)
